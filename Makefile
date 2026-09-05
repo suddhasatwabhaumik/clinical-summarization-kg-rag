@@ -32,6 +32,7 @@ help:
 	@echo "  run-gcp-experiment      - Generate synthetic data and execute E2E GCP pipeline"
 	@echo "  run-evaluator           - Run E2E Clinical Evaluator loop (Standard, CoT, GoT)"
 	@echo "  export-stats            - Export statistical tables (ROUGE, BERTScore, CER)"
+	@echo "  generate-latex          - Compile research charts and academic LaTeX manuscript"
 	@echo "  show-results            - Fetch and display aggregated statistics from BigQuery"
 	@echo "  setup-and-run           - Run full infrastructure setup and execute E2E flow"
 	@echo "  clean                   - Clean local caches and data"
@@ -153,6 +154,12 @@ generate-synthetic-data:
 # Step 1 + Step 2: Generate synthetic dataset and execute E2E GCP pipeline
 run-gcp-experiment: generate-synthetic-data run-pipeline-gcp
 	@echo "GCP Experiment execution finished!"
+
+# Generate academic LaTeX manuscript and publication charts
+generate-latex:
+	@echo "Compiling research charts and academic LaTeX manuscript..."
+	PYTHONPATH=. .venv/bin/python src/latex_generator.py
+
 
 
 

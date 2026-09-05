@@ -1,0 +1,30 @@
+Clinical NLP systems operate in a safety-critical domain governed by complex terminology, temporal dependencies, and ontological relationships. Understanding why standard generative architectures fail in clinical text synthesis requires analyzing both empirical NLP literature and the mathematical limitations of ungrounded neural representation.
+
+\subsection{Taxonomy of Clinical Hallucinations and the CREOLA Framework}
+Early automated summarization benchmarks relied predominantly on surface n-gram overlap metrics (such as ROUGE-1/2/L) and continuous token embeddings (BERTScore). However, empirical evaluations demonstrate that high lexical or semantic overlap does not prevent critical factual distortions. To address this evaluation gap, Asgari et al. introduced the CREOLA (Clinical Reasoning and Error Ontology for LLM Assessment) framework. CREOLA classifies generative clinical errors into four mutually exclusive, clinically severe failure modes:
+\begin{enumerate}
+  \item \textbf{Fabrication ($E_{\text{fab}}$)}: The generation of completely unsubstantiated clinical entities, medications, or laboratory results that do not exist within the primary source document. Weighted with the highest clinical risk multiplier ($w_1 = 5$).
+  \item \textbf{Negation Inversion ($E_{\text{neg}}$)}: Reversal of clinical assertions, such as converting a documented absence of pathology (e.g., "patient denies chest pain") into an active diagnostic finding. Weighted with risk multiplier $w_2 = 4$.
+  \item \textbf{Causality Errors ($E_{\text{cau}}$)}: Inversion or incorrect attribution of cause-and-effect relationships (e.g., attributing renal impairment to an antibiotic prescribed subsequently). Weighted with risk multiplier $w_3 = 3$.
+  \item \textbf{Contextual / Temporal Distortions ($E_{\text{ctx}}$)}: Transposing historical chronic diagnoses into acute chief complaints or confusing pre-admission outpatient drugs with active inpatient treatment regimens. Weighted with risk multiplier $w_4 = 2$.
+\end{enumerate}
+The normalized Clinical Error Rate (CER) is formally defined as:
+\begin{equation}
+  \text{CER} = \frac{5 \cdot E_{\text{fab}} + 4 \cdot E_{\text{neg}} + 3 \cdot E_{\text{cau}} + 2 \cdot E_{\text{ctx}}}{S_{\text{total}}}
+\end{equation}
+where $S_{\text{total}}$ represents the total number of synthesized clinical sentences. This metric serves as our primary quantitative dependent variable for evaluating hallucination suppression.
+
+\subsection{Domain-Specific Dense Embeddings and Vocabulary Coverage}
+Standard pre-trained language models (such as BERT and RoBERTa) are trained on general web corpora (e.g., Wikipedia, BookCorpus). In clinical settings, general-domain tokenizers fracture complex Latinate medical terms into fragmented subwords, degrading vector representation. Domain-adapted models mitigate this challenge:
+\begin{itemize}
+  \item \textbf{Bio\_ClinicalBERT} (Alsentzer et al.): Initialized from BioBERT and continually trained on MIMIC-III clinical notes.
+  \item \textbf{BioLinkBERT} (Yasunaga et al.): Incorporates link prediction and hyperlink graph structure across biomedical articles to capture cross-document relational flow.
+  \item \textbf{PubMedBERT} (Gu et al.): Pre-trained from scratch on 14 million PubMed abstracts with a domain-specific biomedical vocabulary, avoiding domain-shift artifacts of mixed pre-training.
+\end{itemize}
+
+\subsection{Neuro-Symbolic Reasoning: Bridging Vectors and Knowledge Graphs}
+Standard RAG pipelines query a dense vector index via cosine similarity:
+\begin{equation}
+  \text{sim}(q, c) = \frac{\mathbf{e}_q \cdot \mathbf{e}_c}{\|\mathbf{e}_q\| \|\mathbf{e}_c\|}
+\end{equation}
+While effective for locating topical text, vector similarity cannot verify whether concept $A$ (e.g., Asthma) has an ontological contraindication or therapeutic relationship with concept $B$ (e.g., Albuterol). Knowledge Graphs represent structured medical reality as an invariant triple store $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathcal{R})$, where $\mathcal{V}$ denotes UMLS Concept Unique Identifiers (CUIs), $\mathcal{R}$ denotes standardized ontological relations (e.g., \texttt{TREATS}, \texttt{CONTRAINDICATED\_IN}, \texttt{CAUSES}), and $\mathcal{E} \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V}$. Multi-hop graph retrieval extracts 2-hop paths $\mathcal{P}_{u \to v} = (u, r_1, w, r_2, v)$, providing the generative LLM with verified deterministic constraints that prune hallucinated reasoning trajectories.

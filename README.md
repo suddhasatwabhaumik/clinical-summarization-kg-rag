@@ -39,8 +39,15 @@ clinical-summarization-kg-rag/
 │   ├── clinician_correlation.py # Clinician review deck exporter and Spearman correlation (RQ4)
 │   ├── export_hypothesis_tables.py # BigQuery stats compiler for ANOVA/t-test tables
 │   ├── generate_synthetic_data.py # Large-scale MIMIC-IV synthetic dataset generator
+│   ├── generate_charts.py        # Matplotlib academic figure generator for manuscript
+│   ├── latex_generator.py        # Compiles experimental data and prose into LaTeX paper
 │   ├── run_evaluator.py          # E2E evaluative generation loop across prompt strategies
 │   └── show_experiment_results.py # Terminal CLI experiment results formatter
+├── output/
+│   └── latex/                    # Generated LaTeX manuscript and high-resolution figure assets
+│       ├── clinical_kgrag_manuscript.tex
+│       ├── assets/               # Publication charts (PNG, 300 DPI)
+│       └── sections/             # Modular academic prose sections (.txt)
 ├── terraform/                # Infrastructure-as-code modules for GCP deployment
 │   ├── main.tf
 │   ├── variables.tf
@@ -50,6 +57,22 @@ clinical-summarization-kg-rag/
 ├── requirements.txt          # Python dependencies
 └── README.md                 # Main documentation and guide
 ```
+
+---
+
+## Academic Manuscript & LaTeX Generation
+
+The repository includes an automated academic LaTeX compiler that renders high-resolution figures (300 DPI), formats empirical hypothesis tables, formats TikZ vector architecture diagrams, and stitches modular prose into a publication-ready `.tex` manuscript:
+
+```bash
+# Generate research charts and compile LaTeX manuscript
+make generate-latex
+```
+
+Output manuscript is saved at:
+- **Manuscript**: `output/latex/clinical_kgrag_manuscript.tex`
+- **Embedded Figures**: `output/latex/assets/` (`cer_comparison.png`, `embedding_precision.png`, `prompt_metrics.png`, `correlation_scatter.png`)
+- **Prose Sections**: `output/latex/sections/` (`abstract.txt`, `introduction.txt`, `theory.txt`, `methodology.txt`, `metrics.txt`, `results.txt`, `discussion.txt`)
 
 ---
 

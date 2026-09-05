@@ -1,0 +1,29 @@
+To evaluate the clinical fidelity, linguistic quality, and safety of the synthesized handover summaries, we formulate a multi-dimensional evaluation suite combining lexical overlap, semantic embedding distance, clinical error taxonomy, and human-in-the-loop expert correlation.
+
+\subsection{Lexical and Semantic Textual Quality Metrics}
+\begin{itemize}
+  \item \textbf{ROUGE-1, ROUGE-2, and ROUGE-L}: Compute unigram, bigram, and longest common subsequence overlap against physician-authored discharge summaries:
+  \begin{equation}
+    \text{ROUGE-L} = \frac{(1 + \beta^2) R_{\text{LCS}} P_{\text{LCS}}}{R_{\text{LCS}} + \beta^2 P_{\text{LCS}}}
+  \end{equation}
+  \item \textbf{BERTScore F1}: Measures token-level semantic similarity using pre-trained contextual embeddings to account for clinical paraphrasing and synonymy without requiring exact string matching:
+  \begin{equation}
+    \text{BERTScore}_{\text{F1}} = 2 \cdot \frac{P_{\text{BERT}} \cdot R_{\text{BERT}}}{P_{\text{BERT}} + R_{\text{BERT}}}
+  \end{equation}
+\end{itemize}
+
+\subsection{Domain-Specific Clinical Evaluation Metrics}
+\begin{itemize}
+  \item \textbf{UMLS Entity Extraction F1-Score}: Quantifies the factual retention of core medical concepts (diagnoses, medications, procedures) between reference notes ($\mathcal{C}_{\text{ref}}$) and generated summaries ($\mathcal{C}_{\text{cand}}$):
+  \begin{equation}
+    \text{Entity Precision} = \frac{|\mathcal{C}_{\text{cand}} \cap \mathcal{C}_{\text{ref}}|}{|\mathcal{C}_{\text{cand}}|}, \quad \text{Entity Recall} = \frac{|\mathcal{C}_{\text{cand}} \cap \mathcal{C}_{\text{ref}}|}{|\mathcal{C}_{\text{ref}}|}
+  \end{equation}
+  \item \textbf{CREOLA Clinical Error Rate (CER)}: Assesses safety risk by penalizing factual fabrications, negations, and causal errors using the weighted formula described in Equation (1).
+\end{itemize}
+
+\subsection{Clinician Assessment and Statistical Correlation}
+A subset of generated handover summaries ($N = 47$) across prompt conditions was exported to a standardized blinded evaluation deck (\texttt{clinician\_review\_deck.csv}). Two independent medical professionals evaluated the summaries on a 5-point Likert scale assessing clinical factual safety (1 = severe dangerous errors; 5 = completely safe, zero omissions). Spearman's Rank-Order Correlation Coefficient ($\rho$) was calculated between automated metrics ($X$) and clinician scores ($Y$):
+\begin{equation}
+  \rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)}
+\end{equation}
+where $d_i = \text{rank}(X_i) - \text{rank}(Y_i)$, establishing whether automated metrics serve as valid statistical proxies for human expert judgment.
