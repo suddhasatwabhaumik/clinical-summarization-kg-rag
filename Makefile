@@ -30,7 +30,7 @@ help:
 	@echo "  run-pipeline-gcp        - Run pipeline locally pointing to GCP bucket paths"
 	@echo "  generate-synthetic-data - Generate $(ROWS) synthetic clinical records via Gemini"
 	@echo "  run-gcp-experiment      - Generate synthetic data and execute E2E GCP pipeline"
-	@echo "  run-evaluator           - Run E2E Capstone Evaluator loop (Standard, CoT, GoT)"
+	@echo "  run-evaluator           - Run E2E Clinical Evaluator loop (Standard, CoT, GoT)"
 	@echo "  export-stats            - Export statistical tables (ROUGE, BERTScore, CER)"
 	@echo "  show-results            - Fetch and display aggregated statistics from BigQuery"
 	@echo "  setup-and-run           - Run full infrastructure setup and execute E2E flow"
@@ -105,12 +105,12 @@ show-results:
 	@echo "Fetching experiment stats from BigQuery..."
 	. .venv/bin/activate && python src/show_experiment_results.py
 
-# Run E2E Capstone Evaluator loop (Generates summaries, evaluates, and writes stats to BigQuery)
+# Run E2E Clinical Evaluator loop (Generates summaries, evaluates, and writes stats to BigQuery)
 run-evaluator:
-	@echo "Executing E2E Capstone Evaluator across clinical notes..."
-	. .venv/bin/activate && python -m src.run_capstone_evaluator --limit $(or $(N),158)
+	@echo "Executing E2E Clinical Evaluator across clinical notes..."
+	. .venv/bin/activate && python -m src.run_evaluator --limit $(or $(N),158)
 
-# Export aggregated summaries formatted for Capstone statistical tables
+# Export aggregated summaries formatted for publication statistical tables
 export-stats:
 	@echo "Compiling statistical tables for ROUGE, BERTScore, and CER..."
 	. .venv/bin/activate && python -m src.export_hypothesis_tables

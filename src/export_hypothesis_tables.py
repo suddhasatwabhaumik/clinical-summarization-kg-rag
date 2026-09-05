@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """
-Capstone Hypothesis Tables Exporter.
+Hypothesis Statistical Tables Exporter.
 
 Queries the pipeline_evaluation_metrics table in BigQuery to compile mean averages,
 standard deviations, and count distributions grouped by template types. Outputs
-formatted tables ready for copy-pasting into capstone t-tests and ANOVA summaries.
+formatted tables ready for t-tests and ANOVA summaries.
 """
 
 import os
@@ -42,7 +42,7 @@ def export_hypothesis_tables() -> None:
     client = bigquery.Client(project=project_id)
 
     print("\n==========================================================================================")
-    print("                 CAPSTONE RESEARCH HYPOTHESIS VALIDATION TABLES (ANOVA & T-TESTS)")
+    print("                 RESEARCH HYPOTHESIS VALIDATION TABLES (ANOVA & T-TESTS)")
     print("==========================================================================================\n")
 
     # 1. Loop 1 / RQ3 Prompts Comparison Table
@@ -98,8 +98,8 @@ def export_hypothesis_tables() -> None:
         raise RuntimeError("BigQuery query execution error.") from e
 
     # 2. Hypothesis tests guidelines output
-    print("\nStatistical Analysis Notes for Capstone Draft:")
-    print("----------------------------------------------")
+    print("\nStatistical Analysis Notes for Publication:")
+    print("------------------------------------------")
     print("  * For RQ1 (RAG vs. KG-RAG): Compare ROUGE/CER between 'standard' (Control) and 'got' (Experimental) groups using a Paired Samples t-test.")
     print("  * For RQ3 (Prompts): Compare ROUGE/CER across 'standard', 'cot', and 'got' groups using a One-way ANOVA.")
     print("  * For RQ4 (Correlation): Use Spearman's Rank Correlation to cross-verify BERTScore against Clinician Safety scores.")

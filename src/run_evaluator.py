@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-E2E Capstone Evaluator Harness.
+E2E Clinical Evaluator Harness.
 
 Orchestrates the batch generation, evaluation, and database logging of clinical summaries
 for RAG baseline, CoT, and GoT prompts to validate research hypotheses (RQ1, RQ2, RQ3, RQ4).
@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-class CapstoneEvaluator:
+class ClinicalEvaluator:
     """
     Evaluator loop runner executing comparative prompts and embeddings testing.
     
@@ -56,7 +56,7 @@ class CapstoneEvaluator:
         processed_csv: str = "data/processed/processed_data.csv"
     ) -> None:
         """
-        Initializes engines and clients required for capstone evaluations.
+        Initializes engines and clients required for clinical evaluations.
         """
         self.project_id = project_id
         self.dataset_id = dataset_id
@@ -207,14 +207,14 @@ class CapstoneEvaluator:
 
 def main() -> None:
     """
-    Main entrypoint running the Capstone Evaluator harness.
+    Main entrypoint running the Clinical Evaluator harness.
     """
     import argparse
-    parser = argparse.ArgumentParser(description="Capstone Evaluator Harness.")
+    parser = argparse.ArgumentParser(description="Clinical Evaluator Harness.")
     parser.add_argument("--limit", type=int, default=158, help="Max number of notes to evaluate.")
     args = parser.parse_args()
 
-    evaluator = CapstoneEvaluator()
+    evaluator = ClinicalEvaluator()
     evaluator.run_evaluations(limit=args.limit)
 
 

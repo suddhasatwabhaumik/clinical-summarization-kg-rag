@@ -39,7 +39,7 @@ clinical-summarization-kg-rag/
 │   ├── clinician_correlation.py # Clinician review deck exporter and Spearman correlation (RQ4)
 │   ├── export_hypothesis_tables.py # BigQuery stats compiler for ANOVA/t-test tables
 │   ├── generate_synthetic_data.py # Large-scale MIMIC-IV synthetic dataset generator
-│   ├── run_capstone_evaluator.py # E2E evaluative generation loop across prompt strategies
+│   ├── run_evaluator.py          # E2E evaluative generation loop across prompt strategies
 │   └── show_experiment_results.py # Terminal CLI experiment results formatter
 ├── terraform/                # Infrastructure-as-code modules for GCP deployment
 │   ├── main.tf
@@ -55,7 +55,7 @@ clinical-summarization-kg-rag/
 
 ## Research Notebooks
 
-The methodology phases referenced in the Capstone Final Report can be interactively reproduced step-by-step using the provided Jupyter Notebooks:
+The methodology phases referenced in the research paper can be interactively reproduced step-by-step using the provided Jupyter Notebooks:
 
 1. **[01_data_preprocessing.ipynb](notebooks/01_data_preprocessing.ipynb)**: Data ingestion, regex de-identification, biomedical entity extraction, and UMLS Metathesaurus CUI linking.
 2. **[02_knowledge_graph_construction.ipynb](notebooks/02_knowledge_graph_construction.ipynb)**: Knowledge graph schema initialization, node/edge ingestion, and multi-hop (2-hop) neighborhood graph traversal.
@@ -109,7 +109,7 @@ make tf-apply
 ```
 
 
-See [terraform/README.md](file:///Users/suddhasatwa/Documents/LEARNING/000-PhD-Walsh/05-Data%20Analytics-Capstone/research-code/clinical-summarization-kg-rag/terraform/README.md) for detailed inputs and configuration guidelines.
+See [terraform/README.md](terraform/README.md) for detailed inputs and configuration guidelines.
 
 ---
 
