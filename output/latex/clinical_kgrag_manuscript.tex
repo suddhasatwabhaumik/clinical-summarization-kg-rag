@@ -57,36 +57,59 @@ This study implements and empirically benchmarks a hybrid Knowledge Graph-Retrie
 \end{itemize}
 
 \section{Theoretical Background and Related Work}
-Clinical NLP systems operate in a safety-critical domain governed by complex terminology, temporal dependencies, and ontological relationships. Understanding why standard generative architectures fail in clinical text synthesis requires analyzing both empirical NLP literature and the mathematical limitations of ungrounded neural representation.
+Clinical Natural Language Processing (NLP) systems operate in a high-stakes, safety-critical environment. In ordinary consumer AI applications—such as drafting an email or writing a creative story—a small factual slip or creative embellishment is harmless. However, in a hospital intensive care unit or emergency department, an Artificial Intelligence that makes a single factual error when summarizing a patient's chart can lead to catastrophic harm, inappropriate medication, or fatal allergic reactions. To understand why standard generative architectures fail in clinical settings and how to fix them, we must examine two foundational concepts: how AI models make medical mistakes (clinical hallucinations), and how computers struggle to read medical vocabulary.
 
-\subsection{Taxonomy of Clinical Hallucinations and the CREOLA Framework}
-Early automated summarization benchmarks relied predominantly on surface n-gram overlap metrics (such as ROUGE-1/2/L) and continuous token embeddings (BERTScore). However, empirical evaluations demonstrate that high lexical or semantic overlap does not prevent critical factual distortions. To address this evaluation gap, Asgari et al. introduced the CREOLA (Clinical Reasoning and Error Ontology for LLM Assessment) framework. CREOLA classifies generative clinical errors into four mutually exclusive, clinically severe failure modes:
+\subsection{Demystifying Clinical Hallucinations and the CREOLA Framework}
+To a newcomer, the term "AI hallucination" might sound mysterious, but its root cause is straightforward. Modern generative Large Language Models (LLMs) do not possess conscious medical understanding; instead, they operate as statistical pattern-matching engines that predict the most probable sequence of words to follow an input prompt. While this produces fluent, authoritative prose, the model can easily fabricate plausible-sounding statements that have no basis in clinical reality.
+
+In standard computer science, researchers traditionally evaluate text summaries using automated metrics such as ROUGE (which counts how many individual words overlap between the AI summary and reference text) or BERTScore (which checks overall semantic similarity). However, these surface-level metrics fail dangerously in healthcare. For example, consider the clinical sentence: \textit{"Patient has no documented allergy to penicillin."} If an AI generates: \textit{"Patient has a documented allergy to penicillin,"} over 85\% of the words and grammar match identically. Standard NLP metrics award this summary a near-perfect score, yet clinically, it represents a direct contradiction that could cause a physician to withhold life-saving antibiotics.
+
+To quantify clinical safety accurately, Asgari et al. introduced the \textbf{CREOLA} (Clinical Reasoning and Error Ontology for LLM Assessment) framework. Think of CREOLA as a specialized medical safety inspection that penalizes four distinct types of generative errors:
 \begin{enumerate}
-  \item \textbf{Fabrication ($E_{\text{fab}}$)}: The generation of completely unsubstantiated clinical entities, medications, or laboratory results that do not exist within the primary source document. Weighted with the highest clinical risk multiplier ($w_1 = 5$).
-  \item \textbf{Negation Inversion ($E_{\text{neg}}$)}: Reversal of clinical assertions, such as converting a documented absence of pathology (e.g., "patient denies chest pain") into an active diagnostic finding. Weighted with risk multiplier $w_2 = 4$.
-  \item \textbf{Causality Errors ($E_{\text{cau}}$)}: Inversion or incorrect attribution of cause-and-effect relationships (e.g., attributing renal impairment to an antibiotic prescribed subsequently). Weighted with risk multiplier $w_3 = 3$.
-  \item \textbf{Contextual / Temporal Distortions ($E_{\text{ctx}}$)}: Transposing historical chronic diagnoses into acute chief complaints or confusing pre-admission outpatient drugs with active inpatient treatment regimens. Weighted with risk multiplier $w_4 = 2$.
+  \item \textbf{Fabrication ($E_{\text{fab}}$) [Inventing Non-Existent Facts]}: This occurs when the AI makes up medical assertions entirely out of thin air—such as claiming a patient underwent emergency cardiac surgery or had an elevated troponin level when neither appears in the chart. Because fabricating false conditions can trigger invasive tests or inappropriate therapies, fabrication carries the highest clinical penalty multiplier ($w_1 = 5$).
+  \item \textbf{Negation Inversion ($E_{\text{neg}}$) [Flipping 'Yes' and 'No']}: This error occurs when the AI reverses the clinical presence or absence of a symptom, disease, or allergy. For instance, converting \textit{"denies shortness of breath"} into \textit{"presented with acute shortness of breath,"} or omitting a critical drug allergy warning. Because inverting diagnostic negations directly leads to dangerous clinical interventions, it carries a severe penalty weight ($w_2 = 4$).
+  \item \textbf{Causality Errors ($E_{\text{cau}}$) [Mixing up Cause and Effect]}: This occurs when the AI confuses why an event happened or inverts clinical etiology. For example, if a patient developed acute kidney injury and was subsequently placed on renal dialysis, an AI causality error might assert that dialysis \textit{caused} the kidney injury. This carries a risk multiplier of $w_3 = 3$.
+  \item \textbf{Contextual and Temporal Distortions ($E_{\text{ctx}}$) [Confusing Past and Present]}: Medical charts contain both lifelong history and acute emergencies. A contextual distortion occurs when an AI confuses a historical outpatient diagnosis from ten years ago (such as mild childhood asthma) with the acute chief complaint that brought the patient to the hospital today (such as septic shock). This carries a penalty multiplier of $w_4 = 2$.
 \end{enumerate}
-The normalized Clinical Error Rate (CER) is formally defined as:
+
+To calculate an overall safety score, the CREOLA Clinical Error Rate (CER) aggregates these weighted penalty points across all synthesized sentences ($S_{\text{total}}$):
 \begin{equation}
   \text{CER} = \frac{5 \cdot E_{\text{fab}} + 4 \cdot E_{\text{neg}} + 3 \cdot E_{\text{cau}} + 2 \cdot E_{\text{ctx}}}{S_{\text{total}}}
 \end{equation}
-where $S_{\text{total}}$ represents the total number of synthesized clinical sentences. This metric serves as our primary quantitative dependent variable for evaluating hallucination suppression.
+Much like penalty points on a driving examination, a lower CER reflects a safer, more reliable clinical summary. In our research, CER serves as the primary benchmark metric for assessing patient safety.
 
-\subsection{Domain-Specific Dense Embeddings and Vocabulary Coverage}
-Standard pre-trained language models (such as BERT and RoBERTa) are trained on general web corpora (e.g., Wikipedia, BookCorpus). In clinical settings, general-domain tokenizers fracture complex Latinate medical terms into fragmented subwords, degrading vector representation. Domain-adapted models mitigate this challenge:
+\subsection{How Computers Read Medical Text: Embeddings and Tokenization}
+To understand why standard search fails on clinical notes, one must understand how computers process human language. Computers cannot interpret words or letters directly; they only understand mathematics. Language models solve this by converting text into long lists of numbers called \textbf{vectors} or \textbf{dense embeddings}, which function like GPS coordinates on a multi-dimensional map. In this continuous space, words with related meanings (such as \textit{"physician"} and \textit{"doctor"}) are positioned close together.
+
+However, standard AI models (such as original BERT and RoBERTa) were trained on general web corpora, such as Wikipedia articles, news reports, and online books. While their vocabulary easily covers common words like \textit{"hospital"} or \textit{"fever,"} they struggle when confronted with complex Latinate or chemical biomedical terms, such as \textit{"electrocardiogram,"} \textit{"hydrochlorothiazide,"} or \textit{"pheochromocytoma."}
+
+When a general-purpose model encounters a medical term that does not exist in its everyday vocabulary, it is forced into \textbf{subword fragmentation}. Imagine a young child reading a specialized surgical textbook: unable to recognize the long medical words as single ideas, the child must painfully sound out each syllable: \textit{"hy-dro-chlo-ro-thi-a-zide."} In a computer model, fracturing a single medical concept into four or five disjointed fragments dilutes its mathematical meaning, distorts the vector coordinates, and causes the search engine to miss critical diagnostic passages.
+
+To overcome this vocabulary barrier, researchers developed domain-adapted biomedical encoders:
 \begin{itemize}
-  \item \textbf{Bio\_ClinicalBERT} (Alsentzer et al.): Initialized from BioBERT and continually trained on MIMIC-III clinical notes.
-  \item \textbf{BioLinkBERT} (Yasunaga et al.): Incorporates link prediction and hyperlink graph structure across biomedical articles to capture cross-document relational flow.
-  \item \textbf{PubMedBERT} (Gu et al.): Pre-trained from scratch on 14 million PubMed abstracts with a domain-specific biomedical vocabulary, avoiding domain-shift artifacts of mixed pre-training.
+  \item \textbf{Bio\_ClinicalBERT} (Alsentzer et al.): Analogous to a student who received a general high school education and then completed an internship reading hospital discharge summaries from the MIMIC-III database. While it adapts to clinical syntax, it remains constrained by a general-purpose tokenizer dictionary.
+  \item \textbf{BioLinkBERT} (Yasunaga et al.): Analogous to a medical student who studies biomedical literature while actively following the citations and web hyperlinks connecting related research papers, capturing relational flow between medical concepts.
+  \item \textbf{PubMedBERT} (Gu et al.): Analogous to a clinician who attended specialized medical school from day one. Instead of starting with general web text, PubMedBERT was pre-trained \textbf{from scratch} exclusively on 14 million PubMed abstracts using a custom biomedical vocabulary of 28,895 terms. Because it recognizes complex medical terms as unified, complete tokens without fragmentation, it achieves superior semantic retrieval precision over clinical notes.
 \end{itemize}
 
-\subsection{Neuro-Symbolic Reasoning: Bridging Vectors and Knowledge Graphs}
-Standard RAG pipelines query a dense vector index via cosine similarity:
+\subsection{Bridging Vectors and Knowledge Graphs: Searching by 'Vibes' vs. Searching by 'Rules'}
+Standard Retrieval-Augmented Generation (Vector RAG) retrieves relevant clinical notes by calculating cosine similarity between question vectors $\mathbf{e}_q$ and note chunk vectors $\mathbf{e}_c$:
 \begin{equation}
   \text{sim}(q, c) = \frac{\mathbf{e}_q \cdot \mathbf{e}_c}{\|\mathbf{e}_q\| \|\mathbf{e}_c\|}
 \end{equation}
-While effective for locating topical text, vector similarity cannot verify whether concept $A$ (e.g., Asthma) has an ontological contraindication or therapeutic relationship with concept $B$ (e.g., Albuterol). Knowledge Graphs represent structured medical reality as an invariant triple store $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathcal{R})$, where $\mathcal{V}$ denotes UMLS Concept Unique Identifiers (CUIs), $\mathcal{R}$ denotes standardized ontological relations (e.g., \texttt{TREATS}, \texttt{CONTRAINDICATED\_IN}, \texttt{CAUSES}), and $\mathcal{E} \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V}$. Multi-hop graph retrieval extracts 2-hop paths $\mathcal{P}_{u \to v} = (u, r_1, w, r_2, v)$, providing the generative LLM with verified deterministic constraints that prune hallucinated reasoning trajectories.
+Intuitively, vector similarity is like searching a library by "vibes" or thematic resemblance: it easily finds paragraphs that talk generally about heart failure. However, vector similarity is fundamentally blind to structured logic and safety constraints. For example, a vector search cannot distinguish between a paragraph stating that a medication is \textit{indicated} for a patient versus one stating that the exact same medication is \textit{strictly contraindicated}, because both paragraphs contain nearly identical medical vocabulary.
+
+To enforce deterministic medical safety, our architecture pairs vector search with a \textbf{Knowledge Graph}. A Knowledge Graph is structured like an unbreakable medical encyclopedia or family tree: instead of fuzzy mathematical coordinates, it stores verified biomedical facts as discrete relational triples:
+\begin{center}
+  \texttt{(Asthma)} $\xrightarrow{\texttt{TREATS}}$ \texttt{(Albuterol)} \quad \text{and} \quad \texttt{(Penicillin)} $\xrightarrow{\texttt{CONTRAINDICATES}}$ \texttt{(Anaphylaxis)}
+\end{center}
+Formally, the graph is represented as $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathcal{R})$, where $\mathcal{V}$ denotes canonical medical concept vertices (indexed by Unified Medical Language System Concept Unique Identifiers, or CUIs), $\mathcal{R}$ denotes standardized ontological relations (such as \texttt{TREATS}, \texttt{CAUSES}, or \texttt{CONTRAINDICATES}), and $\mathcal{E} \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V}$ represents the relational edges.
+
+By deploying multi-hop graph retrieval, our system extracts multi-step relational reasoning chains:
+\begin{equation}
+  \mathcal{P}_{u \to v} = (u, r_1, w, r_2, v)
+\end{equation}
+This hybrid neuro-symbolic framework provides the generative LLM with the best of both worlds: dense vector search retrieves rich, descriptive patient context, while multi-hop knowledge graph paths act as strict ontological guardrails that prevent the model from hallucinating dangerous clinical assertions.
 
 \section{Experimental Design and Methodology}
 We deployed a rigorous quantitative experimental research design utilizing a dual-path retrieval pipeline integrated with cloud-based inference and evaluation orchestration. This section articulates the experimental design, clinical cohort selection, text sanitization protocols, and cloud computing infrastructure.
@@ -122,11 +145,11 @@ Unstructured EHR narratives exhibit severe formatting irregularities, inconsiste
 \subsection{Biomedical Named Entity Recognition and UMLS Linking}
 To prepare clinical text for graph construction, sanitized narratives are parsed through \texttt{scispacy} using the specialized \texttt{en\_core\_sci\_sm} biomedical pipeline. Entities are extracted across anatomical sites, chemical agents, pathological processes, and clinical findings. Extracted terms are matched to Concept Unique Identifiers (CUIs) and categorized under standardized Semantic Types (e.g., \texttt{T047} for Disease, \texttt{T121} for Pharmacologic Substance) within the Unified Medical Language System (UMLS) Metathesaurus.
 
-\subsection{Cloud Infrastructure, IaC Orchestration, and Reproducibility}
+\subsection{Cloud Infrastructure, IaC Orchestration, and Gemini Foundation Models}
 To ensure enterprise reproducibility, all cloud components were provisioned using Infrastructure-as-Code (Terraform) in Google Cloud Platform:
 \begin{itemize}
   \item \textbf{Data Warehouse and Graph Store}: Google BigQuery hosting dataset \texttt{clinical\_summarization\_eda}, partition-clustered tables for nodes and edges, and append-only evaluation result tables.
-  \item \textbf{Generative Inference}: Google Vertex AI hosting \texttt{gemini-1.5-pro} and \texttt{gemini-1.5-flash} endpoints with deterministic generation parameters ($T = 0.2, \text{top\_p} = 0.95$).
+  \item \textbf{Generative Inference Engine}: Google Vertex AI hosting the latest \textbf{Gemini 3} family of models, deploying \texttt{gemini-3-pro-preview} as the primary analytical clinical reasoner and \texttt{gemini-3-flash} for high-throughput verification pipelines. Inferences operate under deterministic hyperparameter bounds ($T = 0.2, \text{top\_p} = 0.95$) to guarantee clinical reproducibility.
   \item \textbf{Object Storage}: Google Cloud Storage (\texttt{gs://suddhasatwa-clinical-rag-data/}) for raw data backups and artifact versioning.
 \end{itemize}
 
@@ -144,7 +167,10 @@ To overcome these constraints, we architected the clinical knowledge graph as an
 
 To prevent injection attacks and semantic corruption through arbitrary dynamic relationship labels, relationship assignments are strictly enforced against a biomedical ontology whitelist:
 \begin{equation}
-  \mathcal{R}_{\text{approved}} = \{\texttt{TREATS}, \texttt{CAUSES}, \texttt{HAS\_SYMPTOM}, \texttt{ASSOCIATED\_WITH}, \texttt{PREVENTS}, \texttt{DIAGNOSES}, \texttt{INDICATES}, \texttt{CONTRAINDICATES}, \texttt{IS\_A}\}
+  \begin{aligned}
+    \mathcal{R}_{\text{approved}} = \{ & \texttt{TREATS}, \, \texttt{CAUSES}, \, \texttt{HAS\_SYMPTOM}, \, \texttt{ASSOCIATED\_WITH}, \\
+    & \texttt{PREVENTS}, \, \texttt{DIAGNOSES}, \, \texttt{INDICATES}, \, \texttt{CONTRAINDICATES}, \, \texttt{IS\_A} \}
+  \end{aligned}
 \end{equation}
 Any dynamic extraction falling outside $\mathcal{R}_{\text{approved}}$ automatically defaults to the general co-occurrence predicate \texttt{ASSOCIATED\_WITH}.
 
@@ -157,7 +183,10 @@ Extracted entities and sequential co-occurrence edges across hundreds of patient
 \end{equation}
 For relationship edges, bidirectional duplicates are prevented by evaluating undirected equivalence:
 \begin{equation}
-  (T.\texttt{cui\_from} = S.\texttt{cui\_from} \land T.\texttt{cui\_to} = S.\texttt{cui\_to}) \lor (T.\texttt{cui\_from} = S.\texttt{cui\_to} \land T.\texttt{cui\_to} = S.\texttt{cui\_from})
+  \begin{aligned}
+    (T.\texttt{cui\_from} = S.\texttt{cui\_from} & \land T.\texttt{cui\_to} = S.\texttt{cui\_to}) \lor \\
+    (T.\texttt{cui\_from} = S.\texttt{cui\_to} & \land T.\texttt{cui\_to} = S.\texttt{cui\_from})
+  \end{aligned}
 \end{equation}
 This batch-staged upsert architecture ingests in excess of 200,000 relational triples into the active BigQuery graph within 16 seconds, demonstrating production viability for continuous real-time hospital deployment.
 
@@ -170,7 +199,10 @@ Given a target concept identifier $c_{\text{start}}$, the 1-hop bidirectional ne
 \end{equation}
 The 2-hop neighborhood $\mathcal{N}_2(c_{\text{start}})$ is then derived by joining $\mathcal{N}_1$ against the global edge table $\mathcal{E}$, strictly enforcing cycle prevention ($v_{\text{hop2}} \neq c_{\text{start}}$):
 \begin{equation}
-  \mathcal{N}_2(c_{\text{start}}) = \{ (c_{\text{start}}, r_1, v_1, r_2, v_2) \mid (c_{\text{start}}, v_1, r_1) \in \mathcal{N}_1 \land (v_1, v_2, r_2) \in \mathcal{E}, v_2 \neq c_{\text{start}} \}
+  \begin{aligned}
+    \mathcal{N}_2(c_{\text{start}}) = \{ & (c_{\text{start}}, r_1, v_1, r_2, v_2) \mid (c_{\text{start}}, v_1, r_1) \in \mathcal{N}_1 \\
+    & \land (v_1, v_2, r_2) \in \mathcal{E}, \; v_2 \neq c_{\text{start}} \}
+  \end{aligned}
 \end{equation}
 Canonical concept names are joined in parallel from \texttt{graph\_nodes}, returning top-ranked relational paths (e.g., \texttt{(Asthma)-[:TREATS]->(Albuterol)-[:CAUSES]->(Tachycardia)}) within sub-second execution windows.
 
@@ -187,7 +219,7 @@ The dual outputs are synthesized into a linearized context payload. Relational p
 This hybrid context guarantees that the generative model receives both granular descriptive text (dosages, hospital timeline) and structured relational guardrails (diagnostic contraindications, confirmed allergies).
 
 \subsection{Graph-of-Thought (GoT) Constrained Prompt Synthesis}
-Rather than relying on unguided generation, the synthesized context is bound to a structured Graph-of-Thought (GoT) prompt template. The GoT prompt explicitly instructs the generative LLM (Google Vertex AI Gemini 1.5 Pro) to treat the injected knowledge graph triples as inviolable ground-truth constraints:
+Rather than relying on unguided generation, the synthesized context is bound to a structured Graph-of-Thought (GoT) prompt template. The GoT prompt explicitly instructs the generative LLM (Google Vertex AI Gemini 3 Pro, \texttt{gemini-3-pro-preview}) to treat the injected knowledge graph triples as inviolable ground-truth constraints:
 \begin{enumerate}
   \item Reconcile logical medical paths (e.g., therapeutic indications, documented drug-allergy contraindications) directly against the unstructured narrative notes.
   \item Disallow speculative or unsubstantiated associations that lack supporting evidence in either the retrieved text chunks or the knowledge graph paths.

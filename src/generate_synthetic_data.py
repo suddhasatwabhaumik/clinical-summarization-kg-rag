@@ -105,7 +105,7 @@ class SyntheticDataGenerator:
             vertexai.init(project=self.project_id, location=self.location)
             
             logger.info("Querying Gemini on Vertex AI to generate seed clinical templates...")
-            model = GenerativeModel("gemini-1.5-flash")
+            model = GenerativeModel("gemini-3-flash")
             
             prompt = """
             Generate 5 different realistic, brief clinical note summary templates. 

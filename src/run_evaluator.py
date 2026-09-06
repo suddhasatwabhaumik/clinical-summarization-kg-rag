@@ -64,7 +64,7 @@ class ClinicalEvaluator:
 
         # Initialize engines
         self.rag_engine = RAGEngine(persist_dir="data/processed/chroma_db", embedding_model="bio_clinicalbert")
-        self.summarizer = LLMSummarizer(model_name="gemini-1.5-pro", project_id=self.project_id)
+        self.summarizer = LLMSummarizer(model_name="gemini-3-pro-preview", project_id=self.project_id)
         self.evaluator = EvaluationEngine()
         self.graph_builder = GraphBuilder(project_id=self.project_id)
 

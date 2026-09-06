@@ -84,8 +84,8 @@ The research system employs a **dual-path neuro-symbolic architecture**:
 +-----------------------------------------------------------------------------------+
 |                        GENERATIVE INFERENCE TIER                                  |
 |   Google Vertex AI Generative Foundation Models:                                  |
-|   - Gemini 1.5 Pro (Primary Analytical Reasoner, T = 0.2)                         |
-|   - Gemini 1.5 Flash (High-Throughput Verification)                               |
+|   - Gemini 3 Pro (Primary Analytical Reasoner, T = 0.2)                         |
+|   - Gemini 3 Flash (High-Throughput Verification)                               |
 |   Exponential Backoff Retry Strategy | Deterministic Fallbacks                    |
 +-------------------------------------+---------------------------------------------+
                                       |
@@ -111,7 +111,7 @@ The computational infrastructure leverages Google Cloud Platform (GCP) for high-
   * Stores longitudinal evaluation metrics (`experiment_results`, `clinician_evaluations`).
   * Executes multi-hop SQL joins with sub-second latency across hundreds of thousands of clinical concepts.
 * **Google Vertex AI**:
-  * Hosts Gemini 1.5 Pro and Gemini 1.5 Flash models in `us-central1`.
+  * Hosts Gemini 3 Pro and Gemini 3 Flash models in `us-central1`.
   * Configured with temperature $T = 0.2$ for deterministic clinical synthesis.
 * **Google Cloud Storage (GCS)**:
   * Persistent storage bucket (`gs://suddhasatwa-clinical-rag-data/`) for raw discharge notes, processed parquet files, and vector index snapshots.

@@ -109,8 +109,8 @@ Clinical Summary:
 Generative inference is executed through the `LLMSummarizer` class in `src/rag_engine.py`, connecting to Google Cloud Vertex AI.
 
 ### Model Parameters
-* **Target Model**: `gemini-1.5-pro` (Long-context multi-modal foundation model).
-* **Secondary Model**: `gemini-1.5-flash` (Optimized for latency and cost).
+* **Target Model**: `gemini-3-pro-preview` (Long-context multi-modal foundation model).
+* **Secondary Model**: `gemini-3-flash` (Optimized for latency and cost).
 * **Region**: `us-central1`.
 * **Inference Hyperparameters**:
   ```python

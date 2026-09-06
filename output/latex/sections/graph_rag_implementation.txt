@@ -11,7 +11,10 @@ To overcome these constraints, we architected the clinical knowledge graph as an
 
 To prevent injection attacks and semantic corruption through arbitrary dynamic relationship labels, relationship assignments are strictly enforced against a biomedical ontology whitelist:
 \begin{equation}
-  \mathcal{R}_{\text{approved}} = \{\texttt{TREATS}, \texttt{CAUSES}, \texttt{HAS\_SYMPTOM}, \texttt{ASSOCIATED\_WITH}, \texttt{PREVENTS}, \texttt{DIAGNOSES}, \texttt{INDICATES}, \texttt{CONTRAINDICATES}, \texttt{IS\_A}\}
+  \begin{aligned}
+    \mathcal{R}_{\text{approved}} = \{ & \texttt{TREATS}, \, \texttt{CAUSES}, \, \texttt{HAS\_SYMPTOM}, \, \texttt{ASSOCIATED\_WITH}, \\
+    & \texttt{PREVENTS}, \, \texttt{DIAGNOSES}, \, \texttt{INDICATES}, \, \texttt{CONTRAINDICATES}, \, \texttt{IS\_A} \}
+  \end{aligned}
 \end{equation}
 Any dynamic extraction falling outside $\mathcal{R}_{\text{approved}}$ automatically defaults to the general co-occurrence predicate \texttt{ASSOCIATED\_WITH}.
 
@@ -24,7 +27,10 @@ Extracted entities and sequential co-occurrence edges across hundreds of patient
 \end{equation}
 For relationship edges, bidirectional duplicates are prevented by evaluating undirected equivalence:
 \begin{equation}
-  (T.\texttt{cui\_from} = S.\texttt{cui\_from} \land T.\texttt{cui\_to} = S.\texttt{cui\_to}) \lor (T.\texttt{cui\_from} = S.\texttt{cui\_to} \land T.\texttt{cui\_to} = S.\texttt{cui\_from})
+  \begin{aligned}
+    (T.\texttt{cui\_from} = S.\texttt{cui\_from} & \land T.\texttt{cui\_to} = S.\texttt{cui\_to}) \lor \\
+    (T.\texttt{cui\_from} = S.\texttt{cui\_to} & \land T.\texttt{cui\_to} = S.\texttt{cui\_from})
+  \end{aligned}
 \end{equation}
 This batch-staged upsert architecture ingests in excess of 200,000 relational triples into the active BigQuery graph within 16 seconds, demonstrating production viability for continuous real-time hospital deployment.
 
@@ -37,7 +43,10 @@ Given a target concept identifier $c_{\text{start}}$, the 1-hop bidirectional ne
 \end{equation}
 The 2-hop neighborhood $\mathcal{N}_2(c_{\text{start}})$ is then derived by joining $\mathcal{N}_1$ against the global edge table $\mathcal{E}$, strictly enforcing cycle prevention ($v_{\text{hop2}} \neq c_{\text{start}}$):
 \begin{equation}
-  \mathcal{N}_2(c_{\text{start}}) = \{ (c_{\text{start}}, r_1, v_1, r_2, v_2) \mid (c_{\text{start}}, v_1, r_1) \in \mathcal{N}_1 \land (v_1, v_2, r_2) \in \mathcal{E}, v_2 \neq c_{\text{start}} \}
+  \begin{aligned}
+    \mathcal{N}_2(c_{\text{start}}) = \{ & (c_{\text{start}}, r_1, v_1, r_2, v_2) \mid (c_{\text{start}}, v_1, r_1) \in \mathcal{N}_1 \\
+    & \land (v_1, v_2, r_2) \in \mathcal{E}, \; v_2 \neq c_{\text{start}} \}
+  \end{aligned}
 \end{equation}
 Canonical concept names are joined in parallel from \texttt{graph\_nodes}, returning top-ranked relational paths (e.g., \texttt{(Asthma)-[:TREATS]->(Albuterol)-[:CAUSES]->(Tachycardia)}) within sub-second execution windows.
 
@@ -54,7 +63,7 @@ The dual outputs are synthesized into a linearized context payload. Relational p
 This hybrid context guarantees that the generative model receives both granular descriptive text (dosages, hospital timeline) and structured relational guardrails (diagnostic contraindications, confirmed allergies).
 
 \subsection{Graph-of-Thought (GoT) Constrained Prompt Synthesis}
-Rather than relying on unguided generation, the synthesized context is bound to a structured Graph-of-Thought (GoT) prompt template. The GoT prompt explicitly instructs the generative LLM (Google Vertex AI Gemini 1.5 Pro) to treat the injected knowledge graph triples as inviolable ground-truth constraints:
+Rather than relying on unguided generation, the synthesized context is bound to a structured Graph-of-Thought (GoT) prompt template. The GoT prompt explicitly instructs the generative LLM (Google Vertex AI Gemini 3 Pro, \texttt{gemini-3-pro-preview}) to treat the injected knowledge graph triples as inviolable ground-truth constraints:
 \begin{enumerate}
   \item Reconcile logical medical paths (e.g., therapeutic indications, documented drug-allergy contraindications) directly against the unstructured narrative notes.
   \item Disallow speculative or unsubstantiated associations that lack supporting evidence in either the retrieved text chunks or the knowledge graph paths.

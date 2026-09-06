@@ -31,10 +31,10 @@ Unstructured EHR narratives exhibit severe formatting irregularities, inconsiste
 \subsection{Biomedical Named Entity Recognition and UMLS Linking}
 To prepare clinical text for graph construction, sanitized narratives are parsed through \texttt{scispacy} using the specialized \texttt{en\_core\_sci\_sm} biomedical pipeline. Entities are extracted across anatomical sites, chemical agents, pathological processes, and clinical findings. Extracted terms are matched to Concept Unique Identifiers (CUIs) and categorized under standardized Semantic Types (e.g., \texttt{T047} for Disease, \texttt{T121} for Pharmacologic Substance) within the Unified Medical Language System (UMLS) Metathesaurus.
 
-\subsection{Cloud Infrastructure, IaC Orchestration, and Reproducibility}
+\subsection{Cloud Infrastructure, IaC Orchestration, and Gemini Foundation Models}
 To ensure enterprise reproducibility, all cloud components were provisioned using Infrastructure-as-Code (Terraform) in Google Cloud Platform:
 \begin{itemize}
   \item \textbf{Data Warehouse and Graph Store}: Google BigQuery hosting dataset \texttt{clinical\_summarization\_eda}, partition-clustered tables for nodes and edges, and append-only evaluation result tables.
-  \item \textbf{Generative Inference}: Google Vertex AI hosting \texttt{gemini-1.5-pro} and \texttt{gemini-1.5-flash} endpoints with deterministic generation parameters ($T = 0.2, \text{top\_p} = 0.95$).
+  \item \textbf{Generative Inference Engine}: Google Vertex AI hosting the latest **Gemini 3** family of models, deploying \texttt{gemini-3-pro-preview} as the primary analytical clinical reasoner and \texttt{gemini-3-flash} for high-throughput verification pipelines. Inferences operate under deterministic hyperparameter bounds ($T = 0.2, \text{top\_p} = 0.95$) to guarantee clinical reproducibility.
   \item \textbf{Object Storage}: Google Cloud Storage (\texttt{gs://suddhasatwa-clinical-rag-data/}) for raw data backups and artifact versioning.
 \end{itemize}

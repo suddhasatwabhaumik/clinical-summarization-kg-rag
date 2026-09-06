@@ -42,7 +42,7 @@ graph_nodes & graph_edges)]
 
     subgraph Generative Inference & Evaluation
         J4 --> K[Google Vertex AI
-Gemini 1.5 Pro / Flash]
+Gemini 3 Pro / Flash]
         K --> L[Structured Clinical Handover Summary]
         L --> M[Automated NLP Evaluator
 ROUGE, BERTScore, Entity F1]
@@ -93,7 +93,7 @@ The technical guides in this directory provide granular, reproducible documentat
      - Chain-of-Thought (CoT)
      - Self-Consistency ( = 3, T = 0.7$ with pairwise ROUGE-L medoid selection)
      - Graph-of-Thought (GoT) with structured ontological relational paths.
-   - Google Vertex AI Gemini 1.5 Pro / Flash parameter tuning and deterministic temperature constraints ( = 0.2$).
+   - Google Vertex AI Gemini 3 Pro / Flash parameter tuning and deterministic temperature constraints ( = 0.2$).
    - Strict guardrails against clinical omissions and contraindication hallucinations.
 
 6. **[06. Evaluation Framework, CREOLA Metric & Statistical Benchmarks](06_evaluation_framework_and_benchmarks.md)**

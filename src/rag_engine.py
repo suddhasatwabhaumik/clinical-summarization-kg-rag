@@ -282,14 +282,14 @@ class LLMSummarizer:
     Orchestrates connection and query generation with Google Gemini on Vertex AI.
     
     Attributes:
-        model_name (str): Name of the target Vertex AI model (default: "gemini-1.5-pro").
+        model_name (str): Name of the target Vertex AI model (default: "gemini-3-pro-preview").
         project_id (str): Target GCP project ID.
         location (str): GCP region hosting Vertex AI resources (default: "us-central1").
     """
     
     def __init__(
         self, 
-        model_name: str = "gemini-1.5-pro", 
+        model_name: str = "gemini-3-pro-preview", 
         project_id: str = "suddhasatwa-data-projects", 
         location: str = "us-central1"
     ) -> None:
