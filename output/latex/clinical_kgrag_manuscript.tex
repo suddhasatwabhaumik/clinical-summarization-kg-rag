@@ -211,14 +211,16 @@ The comparative performance between the Baseline Vector RAG system and the propo
   \small
   \caption{Model Performance Comparison: Baseline Vector RAG vs. Hybrid KG-RAG ($N = 158$)}
   \label{tab:model\_comparison}
-  \begin{tabularx}{\textwidth}{l c c c X}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{l c c c l}
     \toprule
     \textbf{Pipeline Architecture} & \textbf{Retrieval Features} & \textbf{BERTScore F1} & \textbf{CREOLA CER} & \textbf{Failure Mode Observations} \\
     \midrule
     Baseline Vector RAG & 512-Token Chunks & $0.78 \pm 0.05$ & $0.45 \pm 0.10$ & High allergy omissions, causal errors \\
     \textbf{Hybrid KG-RAG (Ours)} & Vector + 2-Hop Edges & $\mathbf{0.81 \pm 0.03}$ & $\mathbf{0.12 \pm 0.04}$ & Zero allergy omissions, preserved timelines \\
     \bottomrule
-  \end{tabularx}
+  \end{tabular}
+  }
 \end{table}
 
 A Paired-Samples $t$-test was conducted to evaluate the hypothesis that KG-RAG achieves a significantly lower Clinical Error Rate than Baseline RAG. The reduction in error rate from Baseline RAG ($M = 0.45, SD = 0.10$) to KG-RAG ($M = 0.12, SD = 0.04$) was highly statistically significant:
@@ -242,7 +244,8 @@ To evaluate RQ2, concept retrieval precision was benchmarked across three domain
   \small
   \caption{Retrieval Precision Across Domain-Specific Embedding Models (One-Way ANOVA)}
   \label{tab:embedding\_anova}
-  \begin{tabularx}{\textwidth}{l c c c X}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{l c c c l}
     \toprule
     \textbf{Embedding Model} & \textbf{Sample Size ($N$)} & \textbf{Mean Precision} & \textbf{Precision SD} & \textbf{Tukey HSD Post-Hoc Comparison} \\
     \midrule
@@ -250,7 +253,8 @@ To evaluate RQ2, concept retrieval precision was benchmarked across three domain
     BioLinkBERT & 158 & 0.8200 & 0.0245 & Significant difference vs. ClinicalBERT: $p < 0.01$ \\
     \textbf{PubMedBERT} & 158 & $\mathbf{0.8800}$ & 0.0198 & Significant difference vs. BioLinkBERT: $p < 0.05$ \\
     \bottomrule
-  \end{tabularx}
+  \end{tabular}
+  }
 \end{table}
 
 A One-Way Analysis of Variance (ANOVA) revealed a statistically significant difference in retrieval precision across the embedding models:
@@ -274,7 +278,8 @@ The effect of advanced prompt engineering on reasoning fidelity and error suppre
   \small
   \caption{Summary Evaluation Metrics Across Prompting Topologies (BigQuery Aggregate Table)}
   \label{tab:prompt\_comparison}
-  \begin{tabularx}{\textwidth}{l c c c c c}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{l c c c c c}
     \toprule
     \textbf{Prompting Strategy} & \textbf{ROUGE-1 F1} & \textbf{ROUGE-L F1} & \textbf{BERTScore F1} & \textbf{CREOLA CER} & \textbf{Entity F1} \\
     \midrule
@@ -283,7 +288,8 @@ The effect of advanced prompt engineering on reasoning fidelity and error suppre
     Self-Consistency ($K=3, T=0.7$) & $0.8792 \pm 0.022$ & $0.8792 \pm 0.022$ & $0.8792 \pm 0.022$ & $0.1800 \pm 0.000$ & 0.5000 \\
     \textbf{Graph-of-Thought (GoT)} & $0.8012 \pm 0.122$ & $0.7797 \pm 0.155$ & $0.8695 \pm 0.021$ & $\mathbf{0.1200 \pm 0.040}$ & $\mathbf{0.7500 \pm 0.050}$ \\
     \bottomrule
-  \end{tabularx}
+  \end{tabular}
+  }
 \end{table}
 
 A Repeated Measures ANOVA across prompt conditions indicated significant variance in factual correctness ($F(2, 102) = 18.2, p < 0.001$). Crucially, while Standard Zero-Shot prompting achieved high lexical n-gram overlap (ROUGE-1 = 0.88), it exhibited an unacceptable Clinical Error Rate (CER = 0.45). By contrast, Graph-of-Thought prompting reduced CER to 0.12 while increasing core biomedical entity recall from 0.50 to 0.75. This demonstrates that standard lexical overlap metrics fail to detect clinical omissions, whereas GoT prompting actively guides the LLM to retain structured clinical concepts.
@@ -303,7 +309,8 @@ To validate whether automated NLP evaluation metrics serve as reliable surrogate
   \small
   \caption{Spearman Rank Correlation: Automated Metrics vs. Human Clinician Safety Ratings (RQ4)}
   \label{tab:correlation\_results}
-  \begin{tabularx}{\textwidth}{l c c X}
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{l c c l}
     \toprule
     \textbf{Metric Comparison Pair} & \textbf{Spearman's $\rho$} & \textbf{$p$-value} & \textbf{Statistical Significance} \\
     \midrule
@@ -311,7 +318,8 @@ To validate whether automated NLP evaluation metrics serve as reliable surrogate
     ROUGE-L F1 vs. Clinician Safety & -0.3086 & $0.4571$ & Not Significant ($p \ge 0.05$) \\
     \textbf{CREOLA CER vs. Clinician Safety} & $\mathbf{-0.9759}$ & $\mathbf{3.4364 \times 10^{-5}}$ & \textbf{Highly Significant ($p < 0.001$)} \\
     \bottomrule
-  \end{tabularx}
+  \end{tabular}
+  }
 \end{table}
 
 The analysis reveals an extremely strong, statistically significant negative correlation between CREOLA Clinical Error Rate and Clinician Safety Ratings ($\rho = -0.976, p < 0.001$). Summaries with high CER scores were uniformly flagged by clinicians as unsafe for handover due to fabricated or omitted medical facts. Conversely, surface-level lexical and semantic metrics (ROUGE-L and BERTScore) showed no statistically meaningful correlation with clinician safety ($p = 0.457$). This empirical divergence underscores that clinical summarization systems must not be validated using general NLP metrics alone; safety-oriented taxonomies such as CREOLA are essential for clinical deployment.
