@@ -87,38 +87,41 @@ def build_system_architecture_diagram() -> str:
     return r"""
 \begin{figure}[H]
   \centering
-  \resizebox{0.88\textwidth}{!}{%
+  \resizebox{0.86\textwidth}{!}{
   \begin{tikzpicture}[
-    node distance=1.6cm and 2.0cm,
-    box/.style={rectangle, draw=black, thick, rounded corners, minimum height=1.0cm, minimum width=2.8cm, align=center, fill=blue!5},
-    db/.style={cylinder, draw=black, thick, shape border rotate=90, aspect=0.25, minimum height=1.3cm, minimum width=2.4cm, align=center, fill=green!10},
-    llm/.style={rectangle, draw=black, thick, rounded corners, minimum height=1.1cm, minimum width=3.4cm, align=center, fill=orange!15},
+    box/.style={rectangle, draw=black, thick, rounded corners, minimum height=1.0cm, minimum width=6.8cm, align=center, fill=blue!6, font=\small},
+    db/.style={cylinder, draw=black, thick, shape border rotate=90, aspect=0.22, minimum height=1.7cm, minimum width=3.3cm, align=center, fill=green!12, font=\small},
+    llm/.style={rectangle, draw=black, thick, rounded corners, minimum height=1.0cm, minimum width=6.8cm, align=center, fill=orange!15, font=\small},
     arrow/.style={-{Stealth[scale=1.1]}, thick}
   ]
-    % Nodes
-    \node[box] (ehr) {Unstructured Clinical Notes\\(MIMIC-IV Discharge Summaries)};
-    \node[box, below=1.2cm of ehr] (pre) {Data Preprocessing \& NER\\(\texttt{scispacy} / Regex Masking)};
-    
-    \node[db, below left=1.8cm and 0.8cm of pre] (chroma) {Vector DB\\(ChromaDB / PubMedBERT)\\Dense 512-Token Chunks};
-    \node[db, below right=1.8cm and 0.8cm of pre] (graph) {Knowledge Graph\\(Google BigQuery)\\UMLS Concept Triples};
-    
-    \node[box, below=3.6cm of pre, fill=purple!10] (hybrid) {Hybrid Context Fusion\\(Semantic Chunks + 2-Hop Subgraphs)};
-    \node[box, below=1.2cm of hybrid, fill=yellow!15] (prompt) {Graph-of-Thought (GoT) Prompting\\(Ontological Guardrails \& Constraints)};
-    \node[llm, below=1.2cm of prompt] (model) {Generative Synthesis Engine\\(Google Vertex AI Gemini)};
-    \node[box, below=1.2cm of model, fill=green!20] (summary) {Structured Clinical Handover\\(Zero Omissions, Grounded Safety)};
+    % Central and branch nodes with explicit coordinates
+    \node[box] (ehr) at (0, 0) {Unstructured Clinical Notes\\(MIMIC-IV Inpatient Discharge Summaries)};
+    \node[box] (pre) at (0, -1.5) {Data Preprocessing \& Clinical NER\\(\texttt{scispacy} / Regex De-Identification Masking)};
 
-    % Arrows
+    \node[db] (chroma) at (-3.4, -3.8) {Vector Store\\(ChromaDB)\\Dense 512-Token Chunks\\(PubMedBERT $d=768$)};
+    \node[db] (graph) at (3.4, -3.8) {Serverless Graph Store\\(Google BigQuery)\\UMLS Concept Triples\\(2-Hop Communities)};
+
+    \node[box, fill=purple!10] (hybrid) at (0, -6.3) {Dual-Path Hybrid Context Fusion Engine\\(Semantic Text Chunks + Multi-Hop Graph Subgraphs)};
+    \node[box, fill=yellow!15] (prompt) at (0, -7.7) {Graph-of-Thought (GoT) Constrained Prompt Synthesis\\(Deterministic Ontological Guardrails \& Rules)};
+    \node[llm] (model) at (0, -9.1) {Generative Synthesis Engine\\(Google Vertex AI Gemini 3 Pro)};
+    \node[box, fill=green!20] (summary) at (0, -10.5) {Structured Clinical Handover Summary\\(Zero Allergy Omissions, Verified Diagnostic Timeline)};
+
+    % Top branching flows
     \draw[arrow] (ehr) -- (pre);
-    \draw[arrow] (pre) -| node[above, font=\small] {Vectorize} (chroma);
-    \draw[arrow] (pre) -| node[above, font=\small] {Extract Triples} (graph);
-    \draw[arrow] (chroma) |- (hybrid);
-    \draw[arrow] (graph) |- (hybrid);
+    \draw[arrow] (pre.south) -- ++(0,-0.35) -| node[above, pos=0.75, font=\footnotesize] {Tokenize \& Embed} (chroma.north);
+    \draw[arrow] (pre.south) -- ++(0,-0.35) -| node[above, pos=0.75, font=\footnotesize] {CUI Link \& Ingest} (graph.north);
+
+    % Intermediate fusion flows with clean rectangular orthogonal paths
+    \draw[arrow] (chroma.south) -- ++(0,-0.45) -| node[above, pos=0.25, font=\footnotesize] {Top-$k$ Chunks} ([xshift=-2.0cm]hybrid.north);
+    \draw[arrow] (graph.south) -- ++(0,-0.45) -| node[above, pos=0.25, font=\footnotesize] {2-Hop Subgraphs} ([xshift=2.0cm]hybrid.north);
+
+    % Bottom linear pipeline
     \draw[arrow] (hybrid) -- (prompt);
     \draw[arrow] (prompt) -- (model);
     \draw[arrow] (model) -- (summary);
   \end{tikzpicture}
   }
-  \caption{Dual-path neuro-symbolic KG-RAG architecture integrating dense semantic vector retrieval (ChromaDB) with multi-hop ontological graph reasoning (BigQuery/UMLS) for clinical summarization.}
+  \caption{Dual-path neuro-symbolic KG-RAG architecture integrating dense semantic vector retrieval (ChromaDB / PubMedBERT) with multi-hop ontological graph reasoning (BigQuery / UMLS) and Gemini 3 Pro generative synthesis.}
   \label{fig:architecture}
 \end{figure}
 """
