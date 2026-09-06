@@ -136,6 +136,7 @@ def generate_latex_manuscript(
     intro = read_clean_section("introduction")
     theory = read_clean_section("theory")
     methodology = read_clean_section("methodology")
+    graph_rag_implementation = read_clean_section("graph_rag_implementation")
     metrics = read_clean_section("metrics")
     results = read_clean_section("results")
     discussion = read_clean_section("discussion")
@@ -187,8 +188,11 @@ def generate_latex_manuscript(
 \\section{{Theoretical Background and Related Work}}
 {theory}
 
-\\section{{System Architecture and Methodology}}
+\\section{{Experimental Design and Methodology}}
 {methodology}
+
+\\section{{Knowledge Graph Construction and Hybrid Graph-RAG Engineering}}
+{graph_rag_implementation}
 
 {build_system_architecture_diagram()}
 

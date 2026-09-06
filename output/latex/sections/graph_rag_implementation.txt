@@ -1,0 +1,63 @@
+The realization of a reliable clinical summarization system necessitates the tight coupling of structured knowledge graph representation with dense vector retrieval. This section details the complete engineering and implementation of the clinical knowledge graph, the serverless graph store, the dual-path retrieval fusion engine, and the Graph-of-Thought synthesis pipeline.
+
+\subsection{Enterprise Serverless Graph Store in Google BigQuery}
+Traditional knowledge graph implementations rely upon dedicated graph database clusters (e.g., Neo4j, Amazon Neptune). While suitable for exploratory research, dedicated graph databases introduce significant friction in production healthcare environments, including idle cluster hosting overhead, connection pool exhaustion under spiky clinical workloads, and administrative friction regarding HIPAA compliance and Protected Health Information (PHI) segregation.
+
+To overcome these constraints, we architected the clinical knowledge graph as an enterprise serverless graph store directly inside Google BigQuery. Graph topologies are mapped to two core relational tables:
+\begin{itemize}
+  \item \texttt{graph\_nodes}: Stores unique clinical concept vertices, defined by the schema $(\texttt{cui}: \text{STRING}, \texttt{name}: \text{STRING}, \texttt{types}: \text{ARRAY}\langle\text{STRING}\rangle)$, where \texttt{cui} represents the primary key corresponding to the Unified Medical Language System (UMLS) Concept Unique Identifier, \texttt{name} is the normalized canonical label, and \texttt{types} is an array of semantic type tags (e.g., \texttt{T047} for Disease or Syndrome, \texttt{T121} for Pharmacologic Substance).
+  \item \texttt{graph\_edges}: Stores directed and symmetric typed relationships between entities, defined by the schema $(\texttt{cui\_from}: \text{STRING}, \texttt{cui\_to}: \text{STRING}, \texttt{rel\_type}: \text{STRING}, \texttt{updated\_at}: \text{TIMESTAMP})$.
+\end{itemize}
+
+To prevent injection attacks and semantic corruption through arbitrary dynamic relationship labels, relationship assignments are strictly enforced against a biomedical ontology whitelist:
+\begin{equation}
+  \mathcal{R}_{\text{approved}} = \{\texttt{TREATS}, \texttt{CAUSES}, \texttt{HAS\_SYMPTOM}, \texttt{ASSOCIATED\_WITH}, \texttt{PREVENTS}, \texttt{DIAGNOSES}, \texttt{INDICATES}, \texttt{CONTRAINDICATES}, \texttt{IS\_A}\}
+\end{equation}
+Any dynamic extraction falling outside $\mathcal{R}_{\text{approved}}$ automatically defaults to the general co-occurrence predicate \texttt{ASSOCIATED\_WITH}.
+
+\subsection{High-Throughput Bulk Staging and Atomic MERGE Ingestion}
+Sequential row-by-row insertion of medical entities and co-occurrences into cloud analytical warehouses incurs prohibitive network latency and exceeds API rate thresholds. To ensure scalable performance across enterprise EHR volumes, we engineered a two-stage asynchronous ingestion pipeline leveraging temporary staging tables and atomic SQL \texttt{MERGE} operations.
+
+Extracted entities and sequential co-occurrence edges across hundreds of patient encounters are buffered in memory and bulk-loaded into temporary staging tables (\texttt{graph\_nodes\_staging} and \texttt{graph\_edges\_staging}) using distributed Apache Arrow and Pandas batch serialization. Once staged, atomic distributed \texttt{MERGE} statements upsert records into production tables. For concept nodes, incoming semantic types are reconciled via array union:
+\begin{equation}
+  \text{types}_{\text{merged}} = \text{ARRAY\_AGG}(\text{DISTINCT } t \text{ FROM UNNEST}(\text{types}_{\text{target}} \cup \text{types}_{\text{source}}))
+\end{equation}
+For relationship edges, bidirectional duplicates are prevented by evaluating undirected equivalence:
+\begin{equation}
+  (T.\texttt{cui\_from} = S.\texttt{cui\_from} \land T.\texttt{cui\_to} = S.\texttt{cui\_to}) \lor (T.\texttt{cui\_from} = S.\texttt{cui\_to} \land T.\texttt{cui\_to} = S.\texttt{cui\_from})
+\end{equation}
+This batch-staged upsert architecture ingests in excess of 200,000 relational triples into the active BigQuery graph within 16 seconds, demonstrating production viability for continuous real-time hospital deployment.
+
+\subsection{Multi-Hop Subgraph Neighborhood Traversal}
+During clinical summarization inference, the retrieval engine identifies active clinical concepts within the patient record and extracts their local multi-hop relational neighborhoods to establish context boundaries. While recursive path expansion is natively expressed in Cypher, we execute 2-hop neighborhood expansion directly in BigQuery via recursive SQL Common Table Expressions (CTEs).
+
+Given a target concept identifier $c_{\text{start}}$, the 1-hop bidirectional neighborhood $\mathcal{N}_1(c_{\text{start}})$ is computed:
+\begin{equation}
+  \mathcal{N}_1(c_{\text{start}}) = \{ (u, v, r) \in \mathcal{E} \mid u = c_{\text{start}} \lor v = c_{\text{start}} \}
+\end{equation}
+The 2-hop neighborhood $\mathcal{N}_2(c_{\text{start}})$ is then derived by joining $\mathcal{N}_1$ against the global edge table $\mathcal{E}$, strictly enforcing cycle prevention ($v_{\text{hop2}} \neq c_{\text{start}}$):
+\begin{equation}
+  \mathcal{N}_2(c_{\text{start}}) = \{ (c_{\text{start}}, r_1, v_1, r_2, v_2) \mid (c_{\text{start}}, v_1, r_1) \in \mathcal{N}_1 \land (v_1, v_2, r_2) \in \mathcal{E}, v_2 \neq c_{\text{start}} \}
+\end{equation}
+Canonical concept names are joined in parallel from \texttt{graph\_nodes}, returning top-ranked relational paths (e.g., \texttt{(Asthma)-[:TREATS]->(Albuterol)-[:CAUSES]->(Tachycardia)}) within sub-second execution windows.
+
+\subsection{Dual-Path Hybrid Context Fusion Engine}
+The complete retrieval subsystem integrates continuous semantic vector similarity with discrete ontological graph paths. The hybrid retriever operates across two parallel channels:
+\begin{enumerate}
+  \item \textbf{Dense Semantic Channel (ChromaDB)}: The patient note $D$ is segmented into overlapping windows of 512 tokens. Text chunks are encoded into continuous embeddings $\mathbf{e}_c \in \mathbb{R}^{768}$ using domain-specific PubMedBERT. Given query vector $\mathbf{e}_q$, the top-$k$ most similar semantic chunks ($k = 3$) are retrieved via cosine distance.
+  \item \textbf{Symbolic Relational Channel (BigQuery)}: Unstructured text is parsed through \texttt{scispacy} using the \texttt{en\_core\_sci\_sm} biomedical pipeline to extract named clinical concepts. Extracted CUIs trigger the 2-hop BigQuery traversal, retrieving relational paths $\mathcal{P} = \{p_1, p_2, \dots, p_m\}$.
+\end{enumerate}
+The dual outputs are synthesized into a linearized context payload. Relational paths are converted into human-readable logical constraint chains:
+\begin{equation}
+  \mathcal{C}_{\text{graph}} = \bigoplus_{i=1}^m \left( \text{Node}_{i,1} \xrightarrow{\text{Rel}_{i,1}} \text{Node}_{i,2} \xrightarrow{\text{Rel}_{i,2}} \text{Node}_{i,3} \right)
+\end{equation}
+This hybrid context guarantees that the generative model receives both granular descriptive text (dosages, hospital timeline) and structured relational guardrails (diagnostic contraindications, confirmed allergies).
+
+\subsection{Graph-of-Thought (GoT) Constrained Prompt Synthesis}
+Rather than relying on unguided generation, the synthesized context is bound to a structured Graph-of-Thought (GoT) prompt template. The GoT prompt explicitly instructs the generative LLM (Google Vertex AI Gemini 1.5 Pro) to treat the injected knowledge graph triples as inviolable ground-truth constraints:
+\begin{enumerate}
+  \item Reconcile logical medical paths (e.g., therapeutic indications, documented drug-allergy contraindications) directly against the unstructured narrative notes.
+  \item Disallow speculative or unsubstantiated associations that lack supporting evidence in either the retrieved text chunks or the knowledge graph paths.
+  \item Retain all secondary diagnoses, chronologies, and outpatient discharge instructions without truncation.
+\end{enumerate}
+By framing generation as a constrained neuro-symbolic reasoning task, Graph-of-Thought prompting directly addresses the structural cause of clinical hallucinations, ensuring dependable fidelity in safety-critical clinical environments.

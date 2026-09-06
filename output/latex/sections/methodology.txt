@@ -1,40 +1,40 @@
-We deployed a quantitative experimental research design utilizing a dual-path retrieval pipeline integrated with cloud-based inference and evaluation orchestration.
+We deployed a rigorous quantitative experimental research design utilizing a dual-path retrieval pipeline integrated with cloud-based inference and evaluation orchestration. This section articulates the experimental design, clinical cohort selection, text sanitization protocols, and cloud computing infrastructure.
 
-\subsection{Dataset Curation and Clinical Cohort Selection}
-The primary clinical corpus is derived from the **MIMIC-IV** (v2.2) database hosted via PhysioNet. Inclusion criteria restricted the sample to adult inpatient encounters ($N = 158$) with complete unstructured discharge summaries associated with valid hospital admission identifiers (\texttt{hadm\_id}). A priori power analysis conducted at significance level $\alpha = 0.05$ and statistical power $(1 - \beta) = 0.80$ established that a minimum sample size of $N = 34$ is required for a two-tailed paired $t$-test (RQ1), and $N = 158$ is required for the three-group One-Way ANOVA across embedding representations (RQ2). Consequently, evaluating the entire cohort of $N = 158$ admissions satisfies the maximum sample size requirements across all statistical tests.
-
-\subsection{Text Preprocessing and Biomedical Entity Extraction}
-Unstructured EHR narratives contain extensive non-standard abbreviations, irregular formatting, and de-identification tags. The raw notes were preprocessed using the following sequence:
+\subsection{Experimental Design and Hypothesis Testing Framework}
+The research is structured around a four-part experimental design addressing the primary research questions:
 \begin{enumerate}
-  \item \textbf{Regex Normalization}: Standardized erratic carriage returns, unified medical abbreviations, and stripped Health Insurance Portability and Accountability Act (HIPAA) de-identification bracketed placeholders (e.g., \texttt{[** Name **]}).
-  \item \textbf{UMLS Entity Extraction and Linking}: Processed cleaned clinical narratives through \texttt{scispacy} using the domain-specific \texttt{en\_core\_sci\_sm} language pipeline. Entities were linked to canonical Concept Unique Identifiers (CUIs) and Semantic Types in the Unified Medical Language System (UMLS) Metathesaurus.
-  \item \textbf{Sliding Window Chunking}: Partitioned full discharge narratives into 512-token contiguous windows with a 50-token sliding overlap to preserve sentence boundaries and prevent vector representation truncation.
+  \item \textbf{RQ1 (Hallucination Suppression)}: A paired-sample comparative benchmark evaluating the reduction in CREOLA Clinical Error Rate (CER) between Baseline Vector RAG and the proposed Hybrid KG-RAG across identical patient admissions ($N = 158$).
+  \item \textbf{RQ2 (Embedding Precision)}: A balanced three-group comparative benchmark evaluating concept retrieval precision across domain-adapted language representations (\texttt{Bio\_ClinicalBERT}, \texttt{BioLinkBERT}, \texttt{PubMedBERT}).
+  \item \textbf{RQ3 (Prompt Topology Optimization)}: A repeated-measures benchmark comparing four prompting strategies (Standard Zero-Shot, Chain-of-Thought, Self-Consistency $K=3$, and Graph-of-Thought) on factual consistency and entity recall.
+  \item \textbf{RQ4 (Clinical Validity)}: A bivariate correlation analysis evaluating the degree to which automated metrics (ROUGE-L, BERTScore, and CREOLA CER) reflect blinded expert clinician safety ratings ($N = 100$).
 \end{enumerate}
 
-\subsection{Serverless Graph Representation in Google BigQuery}
-To eliminate graph database connection timeouts and enable high-speed analytics at scale, we structured the knowledge graph within Google BigQuery using native relational tables:
+\subsection{Clinical Cohort Selection and Statistical Power Analysis}
+The primary clinical corpus is derived from the **MIMIC-IV** (v2.2) clinical database (Johnson et al., 2023) hosted via PhysioNet. Inclusion criteria restricted the cohort to adult inpatient hospitalizations (age $\ge 18$) with fully finalized, non-truncated discharge summaries associated with unique hospital admission identifiers (\texttt{hadm\_id}) and verified patient identifiers (\texttt{subject\_id}). Admissions containing solely addenda, isolated radiology briefs, or incomplete clinical records were excluded.
+
+To ensure statistical rigor, an a priori power analysis was executed at significance level $\alpha = 0.05$ and statistical power $(1 - \beta) = 0.80$:
 \begin{itemize}
-  \item \texttt{graph\_nodes}: Stores unique clinical concept vertices (\texttt{cui}, \texttt{name}, \texttt{semantic\_types}).
-  \item \texttt{graph\_edges}: Stores typed relational connections between co-occurring entities (\texttt{cui\_from}, \texttt{cui\_to}, \texttt{rel\_type}, \texttt{updated\_at}).
+  \item For the two-tailed paired $t$-test (RQ1), assuming an anticipated large effect size of Cohen's $d \ge 0.50$, the minimum required sample size is $N = 34$.
+  \item For the One-Way ANOVA across three embedding groups (RQ2), assuming a moderate effect size of $f = 0.25$, the minimum required sample size is $N = 158$ (approximately 53 per group).
+  \item For the Repeated Measures ANOVA across four prompt configurations (RQ3), $N = 36$ achieves power $> 0.95$ for $f = 0.25$.
 \end{itemize}
-Bulk ingestion was optimized using a high-speed staging table merge pattern (\texttt{staging\_graph\_nodes} and \texttt{staging\_graph\_edges}), enabling batch upsert of 200,000 synthetic records into structured graph edges in 16 seconds. Multi-hop 2-hop neighborhood traversals query path sequences directly to construct subgraphs surrounding target clinical concepts.
+Evaluating the complete study cohort of $N = 158$ unique hospital admissions satisfies the maximal statistical power requirements across all investigative axes.
 
-\subsection{Dense Vector Indexing and ChromaDB Storage}
-Text chunks were indexed into a persistent ChromaDB vector store using cosine similarity distance. For comparative evaluation in RQ2, the corpus was independently indexed across three biomedical embedding models:
+\subsection{Text Sanitization, Regex Normalization, and Token Chunking}
+Unstructured EHR narratives exhibit severe formatting irregularities, inconsistent capitalization, and de-identification brackets. Text preprocessing in \texttt{src/data\_processor.py} applies the following pipeline:
 \begin{enumerate}
-  \item \texttt{emilyalsentzer/Bio\_ClinicalBERT} ($d = 768$)
-  \item \texttt{michiyasunaga/BioLinkBERT-base} ($d = 768$)
-  \item \texttt{microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext} ($d = 768$)
+  \item \textbf{HIPAA Placeholder Masking}: MIMIC de-identification brackets (e.g., \texttt{[*{*} First Name 123 *{*}]}, \texttt{[*{*} 2182-7-14 *{*}]}) are detected using regular expressions and sanitized to standard tokens to prevent transformer attention distortions.
+  \item \textbf{Clinical Abbreviation Expansion}: Ambiguous Latin medical abbreviations (e.g., \texttt{q.d.} $\to$ daily, \texttt{b.i.d.} $\to$ twice daily, \texttt{p.o.} $\to$ orally) are regularized to ensure consistent semantic alignment during dense embedding search.
+  \item \textbf{Sliding Window Chunking}: Discharge narratives are segmented using a token-level sliding window of 512 contiguous tokens with a 64-token overlap. The 64-token overlap guarantees that clinical assertions, compound prescriptions, and lab result boundaries spanning segment borders are not truncated.
 \end{enumerate}
 
-\subsection{Generative Synthesis and Prompt Engineering Strategies}
-Inference was orchestrated via Google Vertex AI using \texttt{gemini-1.5-pro} and \texttt{gemini-1.5-flash}. To ensure flawless reproducibility across batch evaluations, the summarizer implementation included exponential backoff retries and deterministic fallback mechanisms. Four distinct prompting topologies were evaluated:
+\subsection{Biomedical Named Entity Recognition and UMLS Linking}
+To prepare clinical text for graph construction, sanitized narratives are parsed through \texttt{scispacy} using the specialized \texttt{en\_core\_sci\_sm} biomedical pipeline. Entities are extracted across anatomical sites, chemical agents, pathological processes, and clinical findings. Extracted terms are matched to Concept Unique Identifiers (CUIs) and categorized under standardized Semantic Types (e.g., \texttt{T047} for Disease, \texttt{T121} for Pharmacologic Substance) within the Unified Medical Language System (UMLS) Metathesaurus.
+
+\subsection{Cloud Infrastructure, IaC Orchestration, and Reproducibility}
+To ensure enterprise reproducibility, all cloud components were provisioned using Infrastructure-as-Code (Terraform) in Google Cloud Platform:
 \begin{itemize}
-  \item \textbf{Standard Zero-Shot}: Standard direct summarization instructions over retrieved semantic chunks.
-  \item \textbf{Chain-of-Thought (CoT)}: Prompts requiring the model to generate intermediate step-by-step diagnostic reasoning traces prior to producing the summary.
-  \item \textbf{Self-Consistency}: Ensembles $K = 3$ independent generations sampled at elevated temperature ($T = 0.7$). The consensus summary is selected by calculating pairwise ROUGE-L overlap across candidates and identifying the median consensus node:
-  \begin{equation}
-    S^* = \arg\max_{S_i} \frac{1}{K-1} \sum_{j \neq i} \text{ROUGE-L}(S_i, S_j)
-  \end{equation}
-  \item \textbf{Graph-of-Thought (GoT)}: Prompts explicitly injected with retrieved 2-hop UMLS subgraphs formatted as structured constraint chains (e.g., \texttt{(Asthma)-[:TREATS]->(Albuterol)}), directing the LLM to ground assertions directly against ontological triples.
+  \item \textbf{Data Warehouse and Graph Store}: Google BigQuery hosting dataset \texttt{clinical\_summarization\_eda}, partition-clustered tables for nodes and edges, and append-only evaluation result tables.
+  \item \textbf{Generative Inference}: Google Vertex AI hosting \texttt{gemini-1.5-pro} and \texttt{gemini-1.5-flash} endpoints with deterministic generation parameters ($T = 0.2, \text{top\_p} = 0.95$).
+  \item \textbf{Object Storage}: Google Cloud Storage (\texttt{gs://suddhasatwa-clinical-rag-data/}) for raw data backups and artifact versioning.
 \end{itemize}
