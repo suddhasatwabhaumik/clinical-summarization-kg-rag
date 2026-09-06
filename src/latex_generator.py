@@ -143,6 +143,7 @@ def generate_latex_manuscript(
     metrics = read_clean_section("metrics")
     results = read_clean_section("results")
     discussion = read_clean_section("discussion")
+    conclusion = read_clean_section("conclusion")
 
     latex_content = f"""% --- ACADEMIC MANUSCRIPT PREAMBLE ---
 \\documentclass[11pt, a4paper]{{article}}
@@ -209,7 +210,7 @@ def generate_latex_manuscript(
 {discussion}
 
 \\section{{Conclusion}}
-In this work, we presented a neuro-symbolic hybrid Knowledge Graph-Retrieval Augmented Generation (KG-RAG) pipeline designed to mitigate hallucinations and clinical omissions in automated patient handovers. By coupling dense semantic chunk retrieval with 2-hop relational traversals from the UMLS Metathesaurus and Graph-of-Thought prompting, our system achieved a statistically significant reduction in Clinical Error Rate from 0.45 to 0.12 ($p < 0.001$), while boosting core medical entity retention to 75\\%. Automated CREOLA CER demonstrated an exceptionally strong inverse correlation with expert clinician safety ratings ($\\rho = -0.976, p < 0.001$), in stark contrast to standard lexical metrics. These empirical results prove that domain-specific ontological grounding provides essential, reproducible guardrails for safe clinical deployment.
+{conclusion}
 
 \\begin{{thebibliography}}{{99}}
 
