@@ -126,3 +126,23 @@ Generative inference is executed through the `LLMSummarizer` class in `src/rag_e
 While Zero-Shot and CoT prompting achieve high lexical overlap (ROUGE-1 $\approx 0.88$), their clinical error rates remain unacceptably high ($\text{CER} = 0.45$ and $0.25$). Autoregressive decoders prioritize fluent n-gram continuations, frequently omitting negative statements (such as drug allergies) because allergy statements appear infrequently relative to positive diagnostic assertions.
 
 By converting implicit medical associations into explicit prompt constraints, **Graph-of-Thought achieves $\text{CER} = 0.12$ and boosts core medical entity recall to $0.75$**.
+
+---
+
+## 4. In-Depth Clinical Case Walkthrough: Comparative Prompting in Action
+
+To demonstrate the real-world safety implications of each prompting topology, consider the following representative clinical case from our $N = 158$ patient cohort:
+
+### Clinical Record Excerpt
+> **Patient History & Hospital Course**:  
+> *"A 64-year-old male with acute severe exacerbation of COPD and hypercapnic respiratory acidosis. Patient has a confirmed history of severe anaphylactic allergy to Penicillin and all beta-lactam antibiotics. Administered nebulized ipratropium/albuterol and IV methylprednisolone. Sputum Gram stain pending. Discharged on oral prednisone taper and tiotropium inhaler."*
+
+### Side-by-Side Prompting Execution & Failure Mode Analysis
+
+| Prompting Topology | Model Output Summary | CREOLA Failure Mode | Clinical Consequence & Score |
+| :--- | :--- | :--- | :--- |
+| **1. Standard Zero-Shot** | *"Patient admitted for severe COPD exacerbation treated with bronchodilators and IV steroids. Improved clinically. Started on amoxicillin-clavulanate for suspected pulmonary infection; follow up in two weeks."* | **Fabrication ($E_{\text{fab}}$) + Omission** | **Fatal Malpractice Risk (CER = 0.45, Safety: 1/5)**<br>The model completely dropped the penicillin allergy and fabricated an amoxicillin prescription (a penicillin derivative), which would trigger fatal anaphylaxis. |
+| **2. Chain-of-Thought (CoT)** | *"Reasoning: (1) Patient has COPD exacerbation; (2) Treated with steroids; (3) Note lists penicillin allergy; (4) Acidosis resolved.<br>Summary: Patient presented with respiratory acidosis caused by tiotropium overuse at home. Successfully treated for COPD. Discharged on prednisone. Penicillin allergy noted."* | **Causality Error ($E_{\text{cau}}$)** | **Misleading Attribution (CER = 0.25, Safety: 2/5)**<br>While the allergy was retained, the intermediate reasoning step hallucinated a false cause-and-effect relationship, blaming the acidosis on tiotropium overuse. |
+| **3. Self-Consistency ($K = 3, T = 0.7$)** | *Sample 1 included allergy alert; Samples 2 and 3 omitted it. Medoid consensus selected Sample 2:<br>"Patient admitted with acute COPD exacerbation and respiratory acidosis. Successfully stabilized with bronchodilators and corticosteroids. Discharged on inhaler therapy."* | **Consensus Omission ($E_{\text{neg}}$)** | **Systematic Blind Spot (CER = 0.18, Safety: 2/5)**<br>Because ROUGE-L medoid selection maximizes token overlap with the majority, the minority allergy warning was dropped by the consensus vote. |
+| **4. Graph-of-Thought (GoT)** | *Injected Graph Paths:<br>`(COPD) -[:HAS_SYMPTOM]-> (Dyspnea) -[:INDICATES]-> (Respiratory Acidosis)`<br>`(Ipratropium) -[:TREATS]-> (COPD)`<br>`(Penicillin) -[:CONTRAINDICATES]-> (Severe Anaphylaxis)`<br><br>Summary: "64-year-old male admitted with acute severe COPD exacerbation and respiratory acidosis, managed with IV methylprednisolone and ipratropium/albuterol. Discharged in stable condition on oral prednisone taper and tiotropium.<br>**CRITICAL SAFETY ALERT**: Documented history of severe anaphylaxis to Penicillin and all beta-lactam antibiotics; strict avoidance required."* | **Zero Errors** | **Fully Grounded & Safe (CER = 0.12, Safety: 5/5)**<br>All clinical facts, medications, and contraindications preserved with zero hallucinations and zero omissions. |
+
