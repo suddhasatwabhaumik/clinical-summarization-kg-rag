@@ -29,6 +29,7 @@ def escape_underscores_outside_math(text: str) -> str:
     r"""
     Escapes underscores in regular prose, leaving math blocks untouched.
     Supports inline math ($...$) and environment math (\begin{equation}...\end{equation}).
+    Guarantees that already-escaped underscores (\_) are not double-escaped.
     """
     # First protect equation blocks
     eq_pattern = r'(\\begin\{equation\}.*?\\end\{equation\})'
@@ -43,6 +44,10 @@ def escape_underscores_outside_math(text: str) -> str:
     parts = text.split("$")
     for i in range(len(parts)):
         if i % 2 == 0:  # Outside math mode block
+            # First normalize any double backslash underscores to standard single underscore
+            parts[i] = parts[i].replace("\\\\_", "_")
+            parts[i] = parts[i].replace("\\_", "_")
+            # Now escape all underscores cleanly once
             parts[i] = parts[i].replace("_", "\\_")
     text = "$".join(parts)
 
@@ -162,7 +167,7 @@ def generate_latex_manuscript(
 
 \\author{{
   \\textbf{{Suddhasatwa Bhaumik}} \\\\
-  \\texttt{{suddhasatwabhaumik@users.noreply.github.com}} \\\\
+  \\texttt{{suddhasatwa@google.com}} \\\\
   \\small GitHub Repository: \\href{{https://github.com/suddhasatwabhaumik/clinical-summarization-kg-rag}}{{github.com/suddhasatwabhaumik/clinical-summarization-kg-rag}}
 }}
 

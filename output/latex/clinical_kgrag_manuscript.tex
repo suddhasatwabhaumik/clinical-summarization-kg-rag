@@ -25,7 +25,7 @@
 
 \author{
   \textbf{Suddhasatwa Bhaumik} \\
-  \texttt{suddhasatwabhaumik@users.noreply.github.com} \\
+  \texttt{suddhasatwa@google.com} \\
   \small GitHub Repository: \href{https://github.com/suddhasatwabhaumik/clinical-summarization-kg-rag}{github.com/suddhasatwabhaumik/clinical-summarization-kg-rag}
 }
 
@@ -51,7 +51,7 @@ To overcome these structural limitations, recent biomedical AI research advocate
 This study implements and empirically benchmarks a hybrid Knowledge Graph-Retrieval Augmented Generation (KG-RAG) framework tailored for unstructured EHR summarization over hospital admissions in the MIMIC-IV database. The objective of this research is to evaluate and minimize the Clinical Error Rate (CER) across hospital handovers by combining dense vector retrieval with logical multi-hop graph subgraphs. The core research questions addressed in this manuscript are:
 \begin{itemize}
   \item \textbf{Research Question 1 (RQ1)}: To what extent does integrating medical knowledge graphs with RAG reduce clinical hallucinations (fabrications, negations, causality, and contextual errors) compared to standard vector-database RAG baselines?
-  \item \textbf{Research Question 2 (RQ2)}: How do domain-specific embedding models (Bio\\_ClinicalBERT, BioLinkBERT, PubMedBERT) affect dense semantic alignment and concept retrieval precision across unstructured EHRs?
+  \item \textbf{Research Question 2 (RQ2)}: How do domain-specific embedding models (Bio\_ClinicalBERT, BioLinkBERT, PubMedBERT) affect dense semantic alignment and concept retrieval precision across unstructured EHRs?
   \item \textbf{Research Question 3 (RQ3)}: What is the impact of advanced meta-prompting strategies (Zero-Shot Standard, Chain-of-Thought, Self-Consistency, and Graph-of-Thought) on clinical reasoning and factual correctness?
   \item \textbf{Research Question 4 (RQ4)}: What is the statistical correlation between automated NLP metrics (ROUGE, BERTScore, CREOLA CER) and human clinician-assessed safety ratings?
 \end{itemize}
@@ -76,7 +76,7 @@ where $S_{\text{total}}$ represents the total number of synthesized clinical sen
 \subsection{Domain-Specific Dense Embeddings and Vocabulary Coverage}
 Standard pre-trained language models (such as BERT and RoBERTa) are trained on general web corpora (e.g., Wikipedia, BookCorpus). In clinical settings, general-domain tokenizers fracture complex Latinate medical terms into fragmented subwords, degrading vector representation. Domain-adapted models mitigate this challenge:
 \begin{itemize}
-  \item \textbf{Bio\\_ClinicalBERT} (Alsentzer et al.): Initialized from BioBERT and continually trained on MIMIC-III clinical notes.
+  \item \textbf{Bio\_ClinicalBERT} (Alsentzer et al.): Initialized from BioBERT and continually trained on MIMIC-III clinical notes.
   \item \textbf{BioLinkBERT} (Yasunaga et al.): Incorporates link prediction and hyperlink graph structure across biomedical articles to capture cross-document relational flow.
   \item \textbf{PubMedBERT} (Gu et al.): Pre-trained from scratch on 14 million PubMed abstracts with a domain-specific biomedical vocabulary, avoiding domain-shift artifacts of mixed pre-training.
 \end{itemize}
@@ -86,34 +86,34 @@ Standard RAG pipelines query a dense vector index via cosine similarity:
 \begin{equation}
   \text{sim}(q, c) = \frac{\mathbf{e}_q \cdot \mathbf{e}_c}{\|\mathbf{e}_q\| \|\mathbf{e}_c\|}
 \end{equation}
-While effective for locating topical text, vector similarity cannot verify whether concept $A$ (e.g., Asthma) has an ontological contraindication or therapeutic relationship with concept $B$ (e.g., Albuterol). Knowledge Graphs represent structured medical reality as an invariant triple store $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathcal{R})$, where $\mathcal{V}$ denotes UMLS Concept Unique Identifiers (CUIs), $\mathcal{R}$ denotes standardized ontological relations (e.g., \texttt{TREATS}, \texttt{CONTRAINDICATED\\_IN}, \texttt{CAUSES}), and $\mathcal{E} \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V}$. Multi-hop graph retrieval extracts 2-hop paths $\mathcal{P}_{u \to v} = (u, r_1, w, r_2, v)$, providing the generative LLM with verified deterministic constraints that prune hallucinated reasoning trajectories.
+While effective for locating topical text, vector similarity cannot verify whether concept $A$ (e.g., Asthma) has an ontological contraindication or therapeutic relationship with concept $B$ (e.g., Albuterol). Knowledge Graphs represent structured medical reality as an invariant triple store $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathcal{R})$, where $\mathcal{V}$ denotes UMLS Concept Unique Identifiers (CUIs), $\mathcal{R}$ denotes standardized ontological relations (e.g., \texttt{TREATS}, \texttt{CONTRAINDICATED\_IN}, \texttt{CAUSES}), and $\mathcal{E} \subseteq \mathcal{V} \times \mathcal{R} \times \mathcal{V}$. Multi-hop graph retrieval extracts 2-hop paths $\mathcal{P}_{u \to v} = (u, r_1, w, r_2, v)$, providing the generative LLM with verified deterministic constraints that prune hallucinated reasoning trajectories.
 
 \section{System Architecture and Methodology}
 We deployed a quantitative experimental research design utilizing a dual-path retrieval pipeline integrated with cloud-based inference and evaluation orchestration.
 
 \subsection{Dataset Curation and Clinical Cohort Selection}
-The primary clinical corpus is derived from the \textbf{MIMIC-IV} (v2.2) database hosted via PhysioNet. Inclusion criteria restricted the sample to adult inpatient encounters ($N = 158$) with complete unstructured discharge summaries associated with valid hospital admission identifiers (\texttt{hadm\\_id}). A priori power analysis conducted at significance level $\alpha = 0.05$ and statistical power $(1 - \beta) = 0.80$ established that a minimum sample size of $N = 34$ is required for a two-tailed paired $t$-test (RQ1), and $N = 158$ is required for the three-group One-Way ANOVA across embedding representations (RQ2). Consequently, evaluating the entire cohort of $N = 158$ admissions satisfies the maximum sample size requirements across all statistical tests.
+The primary clinical corpus is derived from the \textbf{MIMIC-IV} (v2.2) database hosted via PhysioNet. Inclusion criteria restricted the sample to adult inpatient encounters ($N = 158$) with complete unstructured discharge summaries associated with valid hospital admission identifiers (\texttt{hadm\_id}). A priori power analysis conducted at significance level $\alpha = 0.05$ and statistical power $(1 - \beta) = 0.80$ established that a minimum sample size of $N = 34$ is required for a two-tailed paired $t$-test (RQ1), and $N = 158$ is required for the three-group One-Way ANOVA across embedding representations (RQ2). Consequently, evaluating the entire cohort of $N = 158$ admissions satisfies the maximum sample size requirements across all statistical tests.
 
 \subsection{Text Preprocessing and Biomedical Entity Extraction}
 Unstructured EHR narratives contain extensive non-standard abbreviations, irregular formatting, and de-identification tags. The raw notes were preprocessed using the following sequence:
 \begin{enumerate}
   \item \textbf{Regex Normalization}: Standardized erratic carriage returns, unified medical abbreviations, and stripped Health Insurance Portability and Accountability Act (HIPAA) de-identification bracketed placeholders (e.g., \texttt{[\textbf{ Name }]}).
-  \item \textbf{UMLS Entity Extraction and Linking}: Processed cleaned clinical narratives through \texttt{scispacy} using the domain-specific \texttt{en\\_core\\_sci\\_sm} language pipeline. Entities were linked to canonical Concept Unique Identifiers (CUIs) and Semantic Types in the Unified Medical Language System (UMLS) Metathesaurus.
+  \item \textbf{UMLS Entity Extraction and Linking}: Processed cleaned clinical narratives through \texttt{scispacy} using the domain-specific \texttt{en\_core\_sci\_sm} language pipeline. Entities were linked to canonical Concept Unique Identifiers (CUIs) and Semantic Types in the Unified Medical Language System (UMLS) Metathesaurus.
   \item \textbf{Sliding Window Chunking}: Partitioned full discharge narratives into 512-token contiguous windows with a 50-token sliding overlap to preserve sentence boundaries and prevent vector representation truncation.
 \end{enumerate}
 
 \subsection{Serverless Graph Representation in Google BigQuery}
 To eliminate graph database connection timeouts and enable high-speed analytics at scale, we structured the knowledge graph within Google BigQuery using native relational tables:
 \begin{itemize}
-  \item \texttt{graph\\_nodes}: Stores unique clinical concept vertices (\texttt{cui}, \texttt{name}, \texttt{semantic\\_types}).
-  \item \texttt{graph\\_edges}: Stores typed relational connections between co-occurring entities (\texttt{cui\\_from}, \texttt{cui\\_to}, \texttt{rel\\_type}, \texttt{updated\\_at}).
+  \item \texttt{graph\_nodes}: Stores unique clinical concept vertices (\texttt{cui}, \texttt{name}, \texttt{semantic\_types}).
+  \item \texttt{graph\_edges}: Stores typed relational connections between co-occurring entities (\texttt{cui\_from}, \texttt{cui\_to}, \texttt{rel\_type}, \texttt{updated\_at}).
 \end{itemize}
-Bulk ingestion was optimized using a high-speed staging table merge pattern (\texttt{staging\\_graph\\_nodes} and \texttt{staging\\_graph\\_edges}), enabling batch upsert of 200,000 synthetic records into structured graph edges in 16 seconds. Multi-hop 2-hop neighborhood traversals query path sequences directly to construct subgraphs surrounding target clinical concepts.
+Bulk ingestion was optimized using a high-speed staging table merge pattern (\texttt{staging\_graph\_nodes} and \texttt{staging\_graph\_edges}), enabling batch upsert of 200,000 synthetic records into structured graph edges in 16 seconds. Multi-hop 2-hop neighborhood traversals query path sequences directly to construct subgraphs surrounding target clinical concepts.
 
 \subsection{Dense Vector Indexing and ChromaDB Storage}
 Text chunks were indexed into a persistent ChromaDB vector store using cosine similarity distance. For comparative evaluation in RQ2, the corpus was independently indexed across three biomedical embedding models:
 \begin{enumerate}
-  \item \texttt{emilyalsentzer/Bio\\_ClinicalBERT} ($d = 768$)
+  \item \texttt{emilyalsentzer/Bio\_ClinicalBERT} ($d = 768$)
   \item \texttt{michiyasunaga/BioLinkBERT-base} ($d = 768$)
   \item \texttt{microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext} ($d = 768$)
 \end{enumerate}
@@ -194,7 +194,7 @@ To evaluate the clinical fidelity, linguistic quality, and safety of the synthes
 \end{itemize}
 
 \subsection{Clinician Assessment and Statistical Correlation}
-A subset of generated handover summaries ($N = 47$) across prompt conditions was exported to a standardized blinded evaluation deck (\texttt{clinician\\_review\\_deck.csv}). Two independent medical professionals evaluated the summaries on a 5-point Likert scale assessing clinical factual safety (1 = severe dangerous errors; 5 = completely safe, zero omissions). Spearman's Rank-Order Correlation Coefficient ($\rho$) was calculated between automated metrics ($X$) and clinician scores ($Y$):
+A subset of generated handover summaries ($N = 47$) across prompt conditions was exported to a standardized blinded evaluation deck (\texttt{clinician\_review\_deck.csv}). Two independent medical professionals evaluated the summaries on a 5-point Likert scale assessing clinical factual safety (1 = severe dangerous errors; 5 = completely safe, zero omissions). Spearman's Rank-Order Correlation Coefficient ($\rho$) was calculated between automated metrics ($X$) and clinician scores ($Y$):
 \begin{equation}
   \rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)}
 \end{equation}
@@ -244,7 +244,7 @@ To evaluate RQ2, concept retrieval precision was benchmarked across three domain
     \toprule
     \textbf{Embedding Model} & \textbf{Sample Size ($N$)} & \textbf{Mean Retrieval Precision} & \textbf{Precision SD} & \textbf{Tukey HSD Post-Hoc} \\
     \midrule
-    Bio\\_ClinicalBERT & 158 & 0.7400 & 0.0312 & Baseline \\
+    Bio\_ClinicalBERT & 158 & 0.7400 & 0.0312 & Baseline \\
     BioLinkBERT & 158 & 0.8200 & 0.0245 & Diff vs. ClinicalBERT: $p < 0.01$ \\
     \textbf{PubMedBERT} & 158 & $\mathbf{0.8800}$ & 0.0198 & Diff vs. BioLinkBERT: $p < 0.05$ \\
     \bottomrule
@@ -255,7 +255,7 @@ A One-Way Analysis of Variance (ANOVA) revealed a statistically significant diff
 \begin{equation}
   F(2, 471) = 15.6, \quad p < 0.001, \quad \eta^2 = 0.062
 \end{equation}
-Tukey's Honestly Significant Difference (HSD) post-hoc test confirmed that PubMedBERT ($M = 0.88$) significantly outperformed BioLinkBERT ($M = 0.82, p = 0.023$) and Bio\\_ClinicalBERT ($M = 0.74, p < 0.001$). These findings validate the theoretical premise that pre-training from scratch on exclusively biomedical corpora avoids the subword fragmentation and vocabulary dilution typical of continually fine-tuned models.
+Tukey's Honestly Significant Difference (HSD) post-hoc test confirmed that PubMedBERT ($M = 0.88$) significantly outperformed BioLinkBERT ($M = 0.82, p = 0.023$) and Bio\_ClinicalBERT ($M = 0.74, p < 0.001$). These findings validate the theoretical premise that pre-training from scratch on exclusively biomedical corpora avoids the subword fragmentation and vocabulary dilution typical of continually fine-tuned models.
 
 \begin{figure}[H]
   \centering
